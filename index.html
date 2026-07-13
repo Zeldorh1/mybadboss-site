@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My Bad Boss AI — the alarm that gets you there</title>
+<meta name="description" content="A smart alarm for people with real shifts. It watches the road, wakes you from wherever you slept, and drafts the message when you're running behind.">
+<style>
+  :root{
+    --bg:#05070d; --bg-raised:#0b1020; --border:#1b2540;
+    --text:#e8edf7; --muted:#8fa0c0; --faint:#5b6b8c;
+    --accent:#4d8dff; --accent-soft:#12203c;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:680px;margin:0 auto;padding:48px 24px 64px}
+  header{padding-top:24px}
+  .brand{display:flex;align-items:center;gap:12px}
+  .mark{width:44px;height:44px;border-radius:12px;background:var(--accent-soft);
+    border:1px solid var(--border);display:grid;place-items:center;font-size:22px}
+  .brand h1{font-size:20px;letter-spacing:.2px}
+  .tag{color:var(--accent);font-size:13px;letter-spacing:.12em;text-transform:uppercase;font-weight:600}
+  .hero{margin:56px 0 40px}
+  .hero h2{font-size:clamp(30px,6vw,42px);line-height:1.15;letter-spacing:-.5px}
+  .hero h2 span{color:var(--accent)}
+  .hero p{color:var(--muted);margin-top:16px;font-size:18px;max-width:34em}
+  .badge{display:inline-block;margin-top:24px;padding:10px 16px;border-radius:999px;
+    background:var(--accent-soft);border:1px solid var(--border);color:var(--text);
+    font-size:14px;font-weight:600}
+  .grid{display:grid;gap:14px;margin:44px 0}
+  .card{background:var(--bg-raised);border:1px solid var(--border);border-radius:14px;padding:18px 20px}
+  .card h3{font-size:15px;margin-bottom:4px}
+  .card p{color:var(--muted);font-size:14px}
+  .card .em{margin-right:8px}
+  footer{margin-top:56px;padding-top:24px;border-top:1px solid var(--border);
+    color:var(--faint);font-size:13px}
+  footer a{color:var(--muted);text-decoration:none}
+  footer a:hover{color:var(--text)}
+  footer .links{display:flex;gap:18px;margin-bottom:10px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="mark">⏰</div>
+      <div>
+        <h1>My Bad Boss AI</h1>
+        <div class="tag">Smart alarm · Commute protection</div>
+      </div>
+    </div>
+  </header>
+
+  <section class="hero">
+    <h2>The alarm that <span>gets you there.</span></h2>
+    <p>Built for people with real shifts — first, second, or third.
+       It does the wake math from your actual commute, watches the road while
+       you sleep, and when a morning goes sideways it drafts the message to
+       your boss so you don't have to type with one shoe on.</p>
+    <span class="badge">🚧 In private beta — coming to Google Play</span>
+  </section>
+
+  <section class="grid">
+    <div class="card"><h3><span class="em">🔔</span>Rings through anything</h3>
+      <p>Alarm-stream audio with an escalating Can't-Miss mode. Muted phone, quiet hours — it still gets you up.</p></div>
+    <div class="card"><h3><span class="em">🧮</span>Does the wake math</h3>
+      <p>Tell it when your shift starts, how long you need to get ready, and your usual drive. It sets the alarm — you stop doing subtraction at midnight.</p></div>
+    <div class="card"><h3><span class="em">🛣️</span>Watches the road</h3>
+      <p>Live traffic before you wake. A wreck on the interstate means an earlier alarm, not a write-up.</p></div>
+    <div class="card"><h3><span class="em">🛏️</span>Wakes you from wherever you slept</h3>
+      <p>Slept at a friend's? Napping in the parking lot before the shift? It notices, and the math still works.</p></div>
+    <div class="card"><h3><span class="em">💬</span>Handles the message</h3>
+      <p>Running behind? It drafts a professional heads-up with your real ETA — right tone for your boss, your lead, or HR. You always hit send yourself.</p></div>
+  </section>
+
+  <footer>
+    <div class="links">
+      <a href="/privacy/">Privacy Policy</a>
+      <a href="/terms/">Terms of Service</a>
+      <a href="mailto:support@mybadboss.app">support@mybadboss.app</a>
+    </div>
+    © 2026 LuxWaveLabs LLC. All rights reserved.
+  </footer>
+</div>
+</body>
+</html>

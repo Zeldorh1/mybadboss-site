@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy Policy — My Bad Boss AI</title>
+<meta name="robots" content="index,follow">
+<style>
+  :root{
+    --bg:#05070d; --bg-raised:#0b1020; --border:#1b2540;
+    --text:#e8edf7; --muted:#8fa0c0; --faint:#5b6b8c; --accent:#4d8dff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);
+    font:16px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  .wrap{max-width:720px;margin:0 auto;padding:40px 24px 64px}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .crumb{font-size:14px;color:var(--muted);margin-bottom:28px;display:inline-block}
+  h1{font-size:30px;letter-spacing:-.3px;margin-bottom:6px}
+  .date{color:var(--faint);font-size:14px;margin-bottom:32px}
+  h2{font-size:20px;margin:36px 0 10px;letter-spacing:-.2px}
+  h3{font-size:16px;margin:22px 0 6px}
+  p,li{color:var(--muted)}
+  p{margin:10px 0}
+  ul{margin:10px 0 10px 22px}
+  li{margin:6px 0}
+  strong{color:var(--text)}
+  .box{background:var(--bg-raised);border:1px solid var(--border);
+    border-radius:12px;padding:16px 18px;margin:16px 0}
+  footer{margin-top:56px;padding-top:20px;border-top:1px solid var(--border);
+    color:var(--faint);font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="crumb" href="/">← My Bad Boss AI</a>
+  <h1>Privacy Policy</h1>
+  <div class="date">Effective date: July 13, 2026</div>
+
+  <p>My Bad Boss AI (“the app”) is made by <strong>LuxWaveLabs LLC</strong>
+  (“we,” “us”). This policy explains what information the app uses, where it
+  goes, and the choices you have. The short version: <strong>the app is built
+  guest-first — your alarms, schedules, and contacts live on your phone, not
+  on our servers.</strong></p>
+
+  <h2>Information the app uses</h2>
+
+  <h3>Location</h3>
+  <p>Location is the heart of a commute-aware alarm. The app uses your
+  device's location to:</p>
+  <ul>
+    <li>compute wake and leave-by times from your actual position (including
+        when you sleep somewhere other than home);</li>
+    <li>detect that you have already arrived at work so alarms and traffic
+        checks stand down;</li>
+    <li>request drive times and routes.</li>
+  </ul>
+  <p>To calculate routes and traffic, your coordinates are sent to
+  <strong>Google Maps Platform</strong> (Google LLC) as part of the route
+  request. <strong>We do not store your location on our servers</strong>, and
+  the app does not track or log your movements. Background location, if you
+  grant it, is used only for brief pre-wake and leave-window checks tied to
+  alarms you created. You can use the app without location — it falls back to
+  the home and work addresses you type in, and plain alarms work with no
+  location at all.</p>
+
+  <h3>Contacts</h3>
+  <p>If you add people to your roster (a boss, a team lead), the app stores
+  only the contacts you explicitly pick — <strong>on your device</strong>.
+  Your contact list is never uploaded to us. Messages to your contacts are
+  sent through your own SMS or WhatsApp app, by you.</p>
+
+  <h3>Schedules and settings</h3>
+  <p>Shift schedules, routines, alarm preferences, and commute settings are
+  stored on your device. If you choose to sign in (optional), some of this
+  data may sync to your account (see “Account” below).</p>
+
+  <h3>AI message drafting</h3>
+  <p>When you ask the app to draft a running-late message, the context needed
+  to write it (for example: how late you are, your estimated arrival time,
+  the recipient's role and first name, and the tone you chose) is processed
+  by our server and a large-language-model provider
+  (<strong>Google Gemini</strong>) solely to generate your draft. Drafts are
+  never sent to anyone automatically — <strong>you always review and press
+  send yourself</strong>, in your own messaging app.</p>
+
+  <h3>Microphone</h3>
+  <p>Some features let you speak instead of type (voice confirmation,
+  voice-filled setup). The microphone is used <strong>only while you actively
+  use those features</strong>, audio is processed to transcribe what you
+  said, and recordings are not retained by us.</p>
+
+  <h3>Account (optional)</h3>
+  <p>The app works without an account. If you sign in, we store your email
+  address and synced app data with our backend provider
+  (<strong>Supabase</strong>) to enable sync and server-side drafting.</p>
+
+  <h3>Purchases</h3>
+  <p>Subscriptions are processed by <strong>Google Play</strong>. Our
+  subscription-management provider (<strong>RevenueCat</strong>) receives
+  purchase tokens and subscription state so the app knows whether Pro is
+  active. We never see your payment card details.</p>
+
+  <h3>Crash and diagnostic data</h3>
+  <p>If the app crashes, technical diagnostics (device model, OS version,
+  stack trace) are collected via <strong>Sentry</strong> to help us fix bugs.
+  This data is not used for advertising.</p>
+
+  <h3>Advertising</h3>
+  <p>The free version currently displays a <strong>static, first-party
+  placeholder banner only</strong> — no third-party ad network is embedded,
+  and no advertising identifiers are collected. If we add a real ad network
+  in a future update, we will update this policy and the Play Store data
+  safety form first.</p>
+
+  <h2>What we don't do</h2>
+  <div class="box">
+    <ul>
+      <li>We do <strong>not</strong> sell your personal information.</li>
+      <li>We do <strong>not</strong> store your location history.</li>
+      <li>We do <strong>not</strong> upload your contact list.</li>
+      <li>We do <strong>not</strong> send messages on your behalf — you
+          always press send.</li>
+    </ul>
+  </div>
+
+  <h2>Service providers</h2>
+  <p>The app relies on these processors, each receiving only what its job
+  requires: Google Maps Platform (routes/traffic), Google Gemini (draft
+  generation), Supabase (optional accounts and sync), RevenueCat
+  (subscription state), Sentry (crash reports), and Google Play (payments and
+  app distribution).</p>
+
+  <h2>Data retention and deletion</h2>
+  <p>On-device data (alarms, schedules, contacts, history) stays on your
+  phone and is deleted when you uninstall the app or clear its storage. If
+  you created an account and want it and its synced data deleted, email
+  <a href="mailto:support@mybadboss.app">support@mybadboss.app</a> from the
+  address you signed up with and we will delete it within 30 days.</p>
+
+  <h2>Security</h2>
+  <p>Data in transit is encrypted with HTTPS/TLS. Account data is protected
+  by our backend provider's row-level security. No method of storage or
+  transmission is 100% secure, but we design so that the most sensitive data
+  — where you sleep and who you message — never needs to leave your phone in
+  the first place.</p>
+
+  <h2>Children</h2>
+  <p>The app is intended for working adults and is rated for users
+  <strong>18 and older</strong>. It is not directed to children, and we do
+  not knowingly collect personal information from anyone under 18.</p>
+
+  <h2>Changes to this policy</h2>
+  <p>If we change this policy, we will post the new version at this address
+  and update the effective date. Material changes (for example, adding an ad
+  network) will be called out in the app's release notes.</p>
+
+  <h2>Contact</h2>
+  <p>LuxWaveLabs LLC<br>
+  Email: <a href="mailto:support@mybadboss.app">support@mybadboss.app</a></p>
+
+  <footer>© 2026 LuxWaveLabs LLC · <a href="/">Home</a> ·
+    <a href="/terms/">Terms of Service</a></footer>
+</div>
+</body>
+</html>
