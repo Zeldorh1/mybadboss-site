@@ -36,7 +36,7 @@
 <div class="wrap">
   <a class="crumb" href="/">← My Bad Boss AI</a>
   <h1>Privacy Policy</h1>
-  <div class="date">Effective date: July 13, 2026</div>
+  <div class="date">Effective date: August 3, 2026</div>
 
   <p>My Bad Boss AI (“the app”) is made by <strong>LuxWaveLabs LLC</strong>
   (“we,” “us”). This policy explains what information the app uses, where it
@@ -73,8 +73,10 @@
 
   <h3>Schedules and settings</h3>
   <p>Shift schedules, routines, alarm preferences, and commute settings are
-  stored on your device. If you choose to sign in (optional), some of this
-  data may sync to your account (see “Account” below).</p>
+  stored <strong>on your device</strong>. The only schedule data saved
+  server-side is the basic timing of work routines you set up (label, start
+  time, days of the week, timezone — <strong>never coordinates or
+  addresses</strong>), which powers commute protection under your account.</p>
 
   <h3>AI message drafting</h3>
   <p>When you ask the app to draft a running-late message, the context needed
@@ -84,6 +86,10 @@
   (<strong>Google Gemini</strong>) solely to generate your draft. Drafts are
   never sent to anyone automatically — <strong>you always review and press
   send yourself</strong>, in your own messaging app.</p>
+  <p>When you use the call-intercept flow, the delay category and the draft
+  text are stored under your account so the app can avoid repeating the same
+  excuse. The main Send Update flow keeps your message history
+  <strong>on your device only</strong>.</p>
 
   <h3>Microphone</h3>
   <p>Some features let you speak instead of type (voice confirmation,
@@ -91,16 +97,24 @@
   use those features</strong>, audio is processed to transcribe what you
   said, and recordings are not retained by us.</p>
 
-  <h3>Account (optional)</h3>
-  <p>The app works without an account. If you sign in, we store your email
-  address and synced app data with our backend provider
-  (<strong>Supabase</strong>) to enable sync and server-side drafting.</p>
+  <h3>Account</h3>
+  <p>The app creates a lightweight account identity automatically the first
+  time a feature needs our servers (a route lookup, an AI draft, or a
+  purchase): a <strong>random user ID with no name, email, or password</strong>.
+  Our backend provider (<strong>Supabase</strong>) stores that identity, your
+  profile with Pro entitlement state, service-usage counters (daily AI and
+  maps allowances), the work-routine times described above, and the
+  call-intercept draft logs. You can optionally “secure” the account later by
+  adding an email — that keeps the same ID and simply lets you recover your
+  subscription on a new phone.</p>
 
   <h3>Purchases</h3>
   <p>Subscriptions are processed by <strong>Google Play</strong>. Our
   subscription-management provider (<strong>RevenueCat</strong>) receives
   purchase tokens and subscription state so the app knows whether Pro is
-  active. We never see your payment card details.</p>
+  active. Purchases are made under your app account's random user ID — no
+  name or email is required — so your subscription is tied to that account
+  and follows it. We never see your payment card details.</p>
 
   <h3>Crash and diagnostic data</h3>
   <p>If the app crashes, technical diagnostics (device model, OS version,
@@ -128,16 +142,24 @@
   <h2>Service providers</h2>
   <p>The app relies on these processors, each receiving only what its job
   requires: Google Maps Platform (routes/traffic), Google Gemini (draft
-  generation), Supabase (optional accounts and sync), RevenueCat
-  (subscription state), Sentry (crash reports), and Google Play (payments and
-  app distribution).</p>
+  generation and voice transcription), Supabase (account identity,
+  entitlement state, usage counters), RevenueCat (subscription state),
+  Sentry (crash reports), Open-Meteo (weather for the wake briefing —
+  approximate coordinates only), and Google Play (payments and app
+  distribution).</p>
 
   <h2>Data retention and deletion</h2>
-  <p>On-device data (alarms, schedules, contacts, history) stays on your
-  phone and is deleted when you uninstall the app or clear its storage. If
-  you created an account and want it and its synced data deleted, email
-  <a href="mailto:support@mybadboss.app">support@mybadboss.app</a> from the
-  address you signed up with and we will delete it within 30 days.</p>
+  <p><strong>Delete everything in the app:</strong> Settings →
+  <strong>Delete account &amp; data</strong> removes your account and all
+  server data immediately, and wipes the app's on-device data (routines,
+  contacts, history, settings, wake-screen photo). Full instructions:
+  <a href="/account-deletion/">Account &amp; data deletion</a>.</p>
+  <p>If you can't access the app, email
+  <a href="mailto:support@mybadboss.app">support@mybadboss.app</a> and we
+  will delete your account within 30 days. On-device data also disappears if
+  you uninstall the app or clear its storage. Accounts that never added an
+  email and have been inactive for about 90 days are deleted automatically;
+  accounts with an active paid subscription are never auto-deleted.</p>
 
   <h2>Security</h2>
   <p>Data in transit is encrypted with HTTPS/TLS. Account data is protected
@@ -161,7 +183,8 @@
   Email: <a href="mailto:support@mybadboss.app">support@mybadboss.app</a></p>
 
   <footer>© 2026 LuxWaveLabs LLC · <a href="/">Home</a> ·
-    <a href="/terms/">Terms of Service</a></footer>
+    <a href="/terms/">Terms of Service</a> ·
+    <a href="/account-deletion/">Account deletion</a></footer>
 </div>
 </body>
 </html>
