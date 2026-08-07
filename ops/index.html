@@ -30,6 +30,7 @@
   table { width:100%; border-collapse:collapse; font-variant-numeric:tabular-nums; }
   td { padding:3px 0; } td:last-child, td:nth-child(2) { text-align:right; }
   td.muted { color:var(--muted); }
+  .subnote { color:var(--muted); font-size:11px; font-weight:400; }
   .anom { padding:6px 10px; border-radius:8px; margin:4px 0; font-size:14px; }
   .anom.red { background:#7f1d1d55; color:#fca5a5; }
   .anom.yellow { background:#713f1255; color:#fde68a; }
@@ -62,7 +63,8 @@
     <div class="status" id="status">&hellip;</div>
     <div class="bignums">
       <div><b id="active">&mdash;</b><span>active users &middot; 24h</span></div>
-      <div><b id="cost">&mdash;</b><span>est. API cost &middot; month</span></div>
+      <div><b id="cost">&mdash;</b><span>est. API cost &middot; month (list)</span></div>
+      <div><b id="billable">&mdash;</b><span>billable after free tier</span></div>
       <div><b id="proj">&mdash;</b><span>projected vs budget</span></div>
       <div><b id="rev">&mdash;</b><span>revenue (connect RC)</span></div>
       <div><b id="anomCount">&mdash;</b><span>anomalies</span></div>
@@ -97,7 +99,7 @@ async function api(params, opts){
 }
 function fillTable(el, rows){
   el.innerHTML = rows.length
-    ? rows.map(r => '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td><td class="muted">' + r[2] + '</td></tr>').join('')
+    ? rows.join('')
     : '<tr><td class="muted">nothing in the last 24h</td></tr>';
 }
 async function refresh(){
@@ -111,6 +113,8 @@ async function refresh(){
     st.className = 'status ' + s.status;
     document.getElementById('active').textContent = s.activeUsers24h;
     document.getElementById('cost').textContent = '$' + s.monthCostUsd.toFixed(2);
+    document.getElementById('billable').textContent =
+      s.monthBillableUsd == null ? '\\u2014' : '$' + s.monthBillableUsd.toFixed(2);
     document.getElementById('proj').textContent =
       '$' + s.monthProjectedUsd + ' / $' + s.monthlyBudgetUsd;
     document.getElementById('rev').textContent = s.revenue == null ? '\u2014' : ('$' + s.revenue);
@@ -119,12 +123,20 @@ async function refresh(){
     ac.style.display = s.anomalies.length ? '' : 'none';
     document.getElementById('anoms').innerHTML = s.anomalies
       .map(a => '<div class="anom ' + a.level + '">' + a.text + '</div>').join('');
-    const bySvc = svc => s.usage24h.filter(r => r.service === svc)
-      .map(r => [r.op, r.calls + ' calls', usd(r.cost_micros)]);
+    const bySvc = svc => s.usage24h.filter(r => r.service === svc).map(r => {
+      const m = (s.usageMonth || []).find(x => x.service === svc && x.op === r.op);
+      const sub = m && m.free_allowance != null
+        ? '<div class="subnote">(' + m.remaining_free.toLocaleString() + ' of ' +
+          m.free_allowance.toLocaleString() + ' free calls left this month)</div>'
+        : '';
+      return '<tr><td>' + r.op + sub + '</td><td>' + r.calls + ' calls</td>' +
+        '<td class="muted">' + usd(r.cost_micros) + '</td></tr>';
+    });
     fillTable(document.getElementById('maps'), bySvc('maps'));
     fillTable(document.getElementById('ai'), bySvc('ai'));
     const cl = (s.client24h || []).map(r =>
-      [r.event, r.count, r.ok ? 'ok' : 'FAIL']);
+      '<tr><td>' + r.event + '</td><td>' + r.count + '</td>' +
+      '<td class="muted">' + (r.ok ? 'ok' : 'FAIL') + '</td></tr>');
     fillTable(document.getElementById('client'), cl);
     document.getElementById('clientNote').style.display = cl.length ? 'none' : '';
     document.getElementById('flags').innerHTML = (s.flags || []).map(f =>
@@ -134,7 +146,8 @@ async function refresh(){
     ).join('');
     document.getElementById('stamp').textContent =
       'updated ' + new Date(s.generatedAt).toLocaleTimeString() +
-      ' \u00b7 estimates at list price \u00b7 auto-refreshes every 60s';
+      ' \u00b7 list price for anomaly rules \u00b7 billable = after Google free' +
+      ' allowances (routing modeled conservatively) \u00b7 refreshes every 60s';
   } catch (e) {
     document.getElementById('gate').style.display = '';
     document.getElementById('gateErr').textContent = e.message;
