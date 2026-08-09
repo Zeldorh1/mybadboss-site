@@ -114,7 +114,7 @@ async function refresh(){
     document.getElementById('active').textContent = s.activeUsers24h;
     document.getElementById('cost').textContent = '$' + s.monthCostUsd.toFixed(2);
     document.getElementById('billable').textContent =
-      s.monthBillableUsd == null ? '\\u2014' : '$' + s.monthBillableUsd.toFixed(2);
+      s.monthBillableUsd == null ? '\u2014' : '$' + s.monthBillableUsd.toFixed(2);
     document.getElementById('proj').textContent =
       '$' + s.monthProjectedUsd + ' / $' + s.monthlyBudgetUsd;
     document.getElementById('rev').textContent = s.revenue == null ? '\u2014' : ('$' + s.revenue);
