@@ -75,9 +75,17 @@
   </div>
   <div class="card"><h2>Maps &middot; 24h</h2><table id="maps"></table></div>
   <div class="card"><h2>AI &middot; 24h</h2><table id="ai"></table></div>
+  <div class="card" id="promiseCard" style="display:none">
+    <h2>Core promise &middot; 24h</h2><table id="promise"></table>
+    <div class="foot">The alarm lifecycle funnel: scheduled &rarr; fired &rarr;
+      wake surfaced &rarr; acknowledged &rarr; departure answered &rarr;
+      ledger settled. A step that drops to zero while the one above it
+      doesn't is where the silence is.</div>
+  </div>
   <div class="card"><h2>Alarm telemetry &middot; 24h</h2><table id="client"></table>
     <div class="foot" id="clientNote" style="display:none">
-      No client events yet &mdash; V1B telemetry ships with a future app build.
+      No client events yet &mdash; V1B telemetry ships with this app build:
+      receipts appear after the first alarm fires on an installed build.
     </div>
   </div>
   <div class="card"><h2>Kill switches</h2><div id="flags"></div></div>
@@ -139,6 +147,34 @@ async function refresh(){
       '<td class="muted">' + (r.ok ? 'ok' : 'FAIL') + '</td></tr>');
     fillTable(document.getElementById('client'), cl);
     document.getElementById('clientNote').style.display = cl.length ? 'none' : '';
+    // Core-promise funnel: compact lifecycle view computed from the
+    // same client rows (the raw table above stays for drill-down).
+    const evCount = (names) => (s.client24h || [])
+      .filter(r => names.indexOf(r.event) >= 0)
+      .reduce((t, r) => t + r.count, 0);
+    const schedFail = evCount(['alarm_schedule_failure']);
+    const funnel = [
+      ['Scheduled (hourly heartbeat)', evCount(['alarm_schedule_success']),
+        schedFail ? schedFail + ' FAILURES' : ''],
+      ['Alarms fired', evCount(['work_alarm_fired','snooze_alarm_fired',
+        'quick_alarm_fired','timer_fired','nap_guard_fired']), ''],
+      ['Wake surfaced', evCount(['wake_screen_shown']), ''],
+      ['Acknowledged', evCount(['alarm_acknowledged']), ''],
+      ['Departure fired', evCount(['departure_check_fired',
+        'departure_verify_fired','departure_unack_fired']), ''],
+      ['Departure answered', evCount(['departure_acknowledged']), ''],
+      ['Ledger settled', evCount(['ledger_settled']), ''],
+    ];
+    const promiseCard = document.getElementById('promiseCard');
+    if (cl.length) {
+      promiseCard.style.display = '';
+      fillTable(document.getElementById('promise'), funnel.map(f =>
+        '<tr><td>' + f[0] + '</td><td>' + f[1] + '</td>' +
+        '<td class="muted" style="color:' + (f[2] ? '#f87171' : '') + '">' +
+        f[2] + '</td></tr>'));
+    } else {
+      promiseCard.style.display = 'none';
+    }
     document.getElementById('flags').innerHTML = (s.flags || []).map(f =>
       '<div class="flag"><div>' + f.key + '<small>' + (f.note || '') + '</small></div>' +
       '<button class="' + (f.enabled ? 'on' : 'off') + '" onclick="toggleFlag(\'' +
