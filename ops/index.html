@@ -146,6 +146,10 @@
     <h2>RevenueCat identities <button class="on" style="float:right" onclick="rcAudit()">Run audit</button></h2>
     <div id="rcAudit" class="muted">Read-only. Classifies every RevenueCat customer against the backend. Deletes nothing.</div>
   </div>
+  <div class="card" id="cleanupCard">
+    <h2>Identity cleanup <button class="on" style="float:right" onclick="cleanupPreview()">Preview (dry run)</button></h2>
+    <div id="cleanup" class="muted">Preview removes nothing. It lists the RevenueCat customers and abandoned Supabase guests that pass every keep rule (no active Pro, no active grant, no paid call or sign-in in the last 14 days, read individually). Removing is a second, separate confirmation per list.</div>
+  </div>
   <div class="foot" id="stamp"></div>
 </div>
 <script>
@@ -420,6 +424,50 @@ async function rcCustomer(id){
       '</table>' + (al.aliases.length ? '<div class="muted" style="font-size:11px;font-family:ui-monospace,monospace">' +
         al.aliases.map(x => x.cls + ' \u00b7 ' + x.id).join('<br>') + '</div>' : '');
   } catch (e) { el.innerHTML = '<div class="err">' + e.message + '</div>'; }
+}
+let cleanupPlan = null;
+async function cleanupPreview(){
+  const el = document.getElementById('cleanup');
+  el.textContent = 'Auditing every customer and every guest\u2026 (reads only)';
+  try {
+    const [rc, guests] = await Promise.all([api('?op=rc_cleanup_plan'), api('?op=guest_cleanup_plan')]);
+    cleanupPlan = { rc, guests };
+    const byCls = list => ['anonymous','canonical','uuid_no_profile','other']
+      .map(c => c + ' ' + list.filter(x => x.cls === c).length).join(' \u00b7 ');
+    const keepWhy = list => { const m = {}; list.forEach(k => m[k.reason] = (m[k.reason]||0)+1);
+      return Object.keys(m).map(k => k + ' ' + m[k]).join(' \u00b7 ') || '\u2014'; };
+    el.innerHTML = '<table>' +
+      '<tr><td>RevenueCat customers to remove</td><td><b>' + rc.delete.length + '</b> of ' + rc.total + '</td></tr>' +
+      '<tr><td class="muted">by class</td><td class="muted">' + byCls(rc.delete) + '</td></tr>' +
+      '<tr><td>RevenueCat customers kept</td><td>' + rc.keep.length + '</td></tr>' +
+      '<tr><td class="muted">why kept</td><td class="muted">' + keepWhy(rc.keep) + '</td></tr>' +
+      '<tr><td>Supabase guests to remove</td><td><b>' + guests.delete.length + '</b></td></tr>' +
+      '<tr><td>Supabase guests / accounts kept</td><td>' + guests.keep.length + '</td></tr>' +
+      '<tr><td class="muted">why kept</td><td class="muted">' + keepWhy(guests.keep) + '</td></tr>' +
+      '</table>' +
+      '<div class="muted" style="font-size:11px;font-family:ui-monospace,monospace;margin-top:6px">kept in RevenueCat:<br>' +
+        rc.keep.map(k => k.reason + ' \u00b7 ' + k.id).join('<br>') + '</div>' +
+      '<div class="acts" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">' +
+        (guests.delete.length ? '<button class="off" onclick="cleanupRun(\'guest\')">Remove ' + guests.delete.length + ' abandoned guests</button>' : '') +
+        (rc.delete.length ? '<button class="off" onclick="cleanupRun(\'rc\')">Remove ' + rc.delete.length + ' RevenueCat customers</button>' : '') +
+      '</div>' +
+      '<div class="foot">Order: guests first (their RevenueCat customers then fall out as no-profile debris), then RevenueCat. Every removal is logged to the admin ledger.</div>';
+  } catch (e) { el.innerHTML = '<div class="err">' + e.message + '</div>'; }
+}
+async function cleanupRun(kind){
+  if (!cleanupPlan) return alert('Preview first.');
+  const list = kind === 'rc' ? cleanupPlan.rc.delete : cleanupPlan.guests.delete;
+  const label = kind === 'rc' ? 'RevenueCat customers' : 'abandoned Supabase guests';
+  if (!confirm('Permanently remove ' + list.length + ' ' + label + '?\n\nEverything with active Pro, an active grant, or activity in the last 14 days is protected and will be refused by the server even if listed.')) return;
+  const el = document.getElementById('cleanup');
+  el.textContent = 'Removing\u2026';
+  try {
+    const r = await api('', { method:'POST', body: JSON.stringify({ op: kind === 'rc' ? 'rc_cleanup' : 'guest_cleanup', ids: list.map(x => x.id) }) });
+    alert('Removed ' + r.deleted + ' \u00b7 refused by keep rules ' + r.refused + ' \u00b7 failed ' + r.failed.length +
+      (r.failed.length ? '\n' + r.failed.map(f => f.id + ': ' + f.error).join('\n') : ''));
+  } catch (e) { alert(e.message); }
+  cleanupPlan = null;
+  cleanupPreview();
 }
 async function toggleFlag(key, enabled){
   if (!enabled && !confirm('Turn OFF ' + key + ' for every installed build?')) return;
