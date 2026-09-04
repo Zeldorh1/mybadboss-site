@@ -108,7 +108,7 @@
   <div class="card" id="userCard">
     <h2>User lookup</h2>
     <div class="grantform">
-      <input id="uId" placeholder="Support ID (paste from the tester's Settings → About)" autocomplete="off">
+      <input id="uId" placeholder="Support ID (paste from the tester's Settings &rarr; About)" autocomplete="off">
       <button class="on" onclick="lookupUser()">Look up</button>
     </div>
     <div id="userView" class="muted">Paste a Support ID to see tier, Pro source, RevenueCat truth, suspension, usage and cost (today / 7d / 30d), and the admin history.</div>
@@ -119,7 +119,7 @@
       Set RC_V2_SECRET_KEY + RC_PRO_ENTITLEMENT_ID (Edge Function secrets) and apply migration 0012.
     </div>
     <div class="grantform">
-      <input id="gUser" placeholder="Support ID (full UUID from Settings → About)" autocomplete="off">
+      <input id="gUser" placeholder="Support ID (full UUID from Settings &rarr; About)" autocomplete="off">
       <select id="gReason">
         <option value="beta_tester">Beta tester</option>
         <option value="founder_vip">Founder / VIP</option>
@@ -130,14 +130,14 @@
       <select id="gDays">
         <option value="7">7 days</option><option value="30">30 days</option>
         <option value="90" selected>90 days</option><option value="365">1 year</option>
-        <option value="custom">Custom…</option>
+        <option value="custom">Custom&hellip;</option>
       </select>
       <input id="gCustom" type="number" min="1" max="400" placeholder="days" style="display:none">
       <input id="gNote" placeholder="note (optional)" autocomplete="off">
       <button class="on" onclick="grantPro()">Grant Pro</button>
     </div>
     <div id="grants"></div>
-    <div class="foot">Grants are made IN RevenueCat (promotional entitlement); the backend mirrors what RevenueCat says. Tester taps More → Refresh Pro access.</div>
+    <div class="foot">Grants are made IN RevenueCat (promotional entitlement); the backend mirrors what RevenueCat says. Tester taps More &rarr; Refresh Pro access.</div>
   </div>
   <div class="card" id="rcCard">
     <h2>RevenueCat identities <button class="on" style="float:right" onclick="rcAudit()">Run audit</button></h2>
@@ -179,7 +179,7 @@ async function refresh(){
       s.monthBillableUsd == null ? '\u2014' : '$' + s.monthBillableUsd.toFixed(2);
     document.getElementById('proj').textContent =
       '$' + s.monthProjectedUsd + ' / $' + s.monthlyBudgetUsd;
-    document.getElementById('rev').textContent = s.revenue == null ? '—' : ('$' + s.revenue);
+    document.getElementById('rev').textContent = s.revenue == null ? '\u2014' : ('$' + s.revenue);
     document.getElementById('anomCount').textContent = s.anomalies.length;
     const ac = document.getElementById('anomCard');
     ac.style.display = s.anomalies.length ? '' : 'none';
@@ -256,8 +256,8 @@ async function refresh(){
     ).join('');
     document.getElementById('stamp').textContent =
       'updated ' + new Date(s.generatedAt).toLocaleTimeString() +
-      ' · list price for anomaly rules · billable = after Google free' +
-      ' allowances (routing modeled conservatively) · refreshes every 60s';
+      ' \u00b7 list price for anomaly rules \u00b7 billable = after Google free' +
+      ' allowances (routing modeled conservatively) \u00b7 refreshes every 60s';
   } catch (e) {
     document.getElementById('gate').style.display = '';
     document.getElementById('gateErr').textContent = e.message;
@@ -274,19 +274,19 @@ async function loadGrants(){
   try {
     const g = await api('?op=grants');
     document.getElementById('proNotConfigured').style.display = g.configured ? 'none' : '';
-    const fmt = t => t ? new Date(t).toLocaleDateString() : '—';
+    const fmt = t => t ? new Date(t).toLocaleDateString() : '\u2014';
     document.getElementById('grants').innerHTML = (g.grants || []).length
       ? g.grants.map(r =>
         '<div class="grant"><div>' + r.reason_code.replace('_',' ') +
         '<span class="pill ' + r.status + '">' + r.status + '</span>' +
-        (r.reason_note ? ' · ' + r.reason_note : '') + '</div>' +
+        (r.reason_note ? ' \u00b7 ' + r.reason_note : '') + '</div>' +
         '<small>' + r.user_id + '</small>' +
         '<div class="muted" style="font-size:12px">granted ' + fmt(r.granted_at) +
-        ' · expires ' + fmt(r.expires_at) +
-        (r.revoked_at ? ' · revoked ' + fmt(r.revoked_at) : '') + '</div>' +
+        ' \u00b7 expires ' + fmt(r.expires_at) +
+        (r.revoked_at ? ' \u00b7 revoked ' + fmt(r.revoked_at) : '') + '</div>' +
         (r.status === 'active'
-          ? '<div class="acts"><button class="on" onclick="extendPro('' + r.user_id + '')">Extend +30d</button>' +
-            '<button class="off" onclick="revokePro('' + r.user_id + '')">Revoke</button></div>'
+          ? '<div class="acts"><button class="on" onclick="extendPro(\'' + r.user_id + '\')">Extend +30d</button>' +
+            '<button class="off" onclick="revokePro(\'' + r.user_id + '\')">Revoke</button></div>'
           : '') +
         '</div>').join('')
       : '<div class="muted">No grants yet.</div>';
@@ -298,32 +298,26 @@ async function grantPro(){
   const userId = document.getElementById('gUser').value.trim();
   const days = grantDays();
   if (!userId) return alert('Paste the Support ID first.');
-  if (!confirm('Grant Pro for ' + days + ' days to
-' + userId + ' ?')) return;
+  if (!confirm('Grant Pro for ' + days + ' days to\n' + userId + ' ?')) return;
   try {
     const r = await api('', { method:'POST', body: JSON.stringify({
       op:'grant_pro', userId, days,
       reasonCode: document.getElementById('gReason').value,
       reasonNote: document.getElementById('gNote').value.trim(),
     })});
-    alert('Granted. RevenueCat now says: ' + (r.isPro ? 'PRO' : 'not pro') + '
-Expires ' + new Date(r.expiresAt).toLocaleString());
+    alert('Granted. RevenueCat now says: ' + (r.isPro ? 'PRO' : 'not pro') + '\nExpires ' + new Date(r.expiresAt).toLocaleString());
     document.getElementById('gUser').value = ''; document.getElementById('gNote').value = '';
   } catch (e) { alert(e.message); }
   loadGrants();
 }
 async function extendPro(userId){
-  if (!confirm('Extend Pro by 30 days for
-' + userId + ' ?')) return;
+  if (!confirm('Extend Pro by 30 days for\n' + userId + ' ?')) return;
   try { await api('', { method:'POST', body: JSON.stringify({ op:'extend_pro', userId, days:30 }) }); }
   catch (e) { alert(e.message); }
   loadGrants();
 }
 async function revokePro(userId){
-  const why = prompt('Revoke Pro for
-' + userId + '
-
-Reason (kept in the ledger):');
+  const why = prompt('Revoke Pro for\n' + userId + '\n\nReason (kept in the ledger):');
   if (why === null) return;
   try { await api('', { method:'POST', body: JSON.stringify({ op:'revoke_pro', userId, revokeReason: why }) }); }
   catch (e) { alert(e.message); }
@@ -334,63 +328,58 @@ async function lookupUser(){
   const id = document.getElementById('uId').value.trim();
   const el = document.getElementById('userView');
   if (!id) return;
-  el.textContent = 'Looking up…';
+  el.textContent = 'Looking up\u2026';
   try {
     const u = await api('?op=user&id=' + encodeURIComponent(id));
     const g = u.activeGrant;
     const rc = u.revenuecat || {};
     const tot = w => ((u.usage && u.usage.totals) || []).find(t => t.w === w) || { calls:0, cost_micros:0 };
     const svc = w => ((u.usage && u.usage.by_service) || []).filter(t => t.w === w)
-      .map(t => t.service + ' ' + t.calls + ' (' + money(t.cost_micros) + ')').join(' · ') || '—';
+      .map(t => t.service + ' ' + t.calls + ' (' + money(t.cost_micros) + ')').join(' \u00b7 ') || '\u2014';
     const share = u.usage && u.usage.company_30d_cost_micros
-      ? (100 * tot('30d').cost_micros / u.usage.company_30d_cost_micros).toFixed(2) + '%' : '—';
+      ? (100 * tot('30d').cost_micros / u.usage.company_30d_cost_micros).toFixed(2) + '%' : '\u2014';
     const sus = u.controls && u.controls.paid_services_suspended;
     el.innerHTML =
       '<table>' +
-      '<tr><td>Tier</td><td><b>' + u.tier.toUpperCase() + '</b>' + (u.proSource ? ' · ' + u.proSource : '') + '</td></tr>' +
-      (g ? '<tr><td>Grant</td><td>' + g.reason_code.replace('_',' ') + (g.reason_note ? ' · ' + g.reason_note : '') +
-           ' · expires ' + new Date(g.expires_at).toLocaleDateString() + '</td></tr>' : '') +
+      '<tr><td>Tier</td><td><b>' + u.tier.toUpperCase() + '</b>' + (u.proSource ? ' \u00b7 ' + u.proSource : '') + '</td></tr>' +
+      (g ? '<tr><td>Grant</td><td>' + g.reason_code.replace('_',' ') + (g.reason_note ? ' \u00b7 ' + g.reason_note : '') +
+           ' \u00b7 expires ' + new Date(g.expires_at).toLocaleDateString() + '</td></tr>' : '') +
       '<tr><td>RevenueCat</td><td>' + (rc.error ? '<span class="err">' + rc.error + '</span>'
           : (rc.known ? (rc.activePro ? 'PRO active' : 'no active Pro') : 'never seen')) + '</td></tr>' +
       '<tr><td>Backend</td><td>' + (u.profile ? (u.profile.is_pro ? 'is_pro = true' : 'is_pro = false') : 'no profile row') + '</td></tr>' +
-      '<tr><td>Paid services</td><td>' + (sus ? '<span class="err">SUSPENDED · ' + (u.controls.suspend_reason || '') + '</span>' : 'normal') + '</td></tr>' +
-      '<tr><td>Last seen</td><td>' + (u.usage && u.usage.last_seen_at ? new Date(u.usage.last_seen_at).toLocaleString() : '—') +
-          ' · active days (30d): ' + ((u.usage && u.usage.active_days_30d) || 0) + '</td></tr>' +
-      '<tr><td>Today</td><td>' + tot('today').calls + ' calls · ' + money(tot('today').cost_micros) + '<br><span class="muted">' + svc('today') + '</span></td></tr>' +
-      '<tr><td>7 days</td><td>' + tot('7d').calls + ' calls · ' + money(tot('7d').cost_micros) + '<br><span class="muted">' + svc('7d') + '</span></td></tr>' +
-      '<tr><td>30 days</td><td>' + tot('30d').calls + ' calls · ' + money(tot('30d').cost_micros) + ' · share of company spend ' + share + '</td></tr>' +
+      '<tr><td>Paid services</td><td>' + (sus ? '<span class="err">SUSPENDED \u00b7 ' + (u.controls.suspend_reason || '') + '</span>' : 'normal') + '</td></tr>' +
+      '<tr><td>Last seen</td><td>' + (u.usage && u.usage.last_seen_at ? new Date(u.usage.last_seen_at).toLocaleString() : '\u2014') +
+          ' \u00b7 active days (30d): ' + ((u.usage && u.usage.active_days_30d) || 0) + '</td></tr>' +
+      '<tr><td>Today</td><td>' + tot('today').calls + ' calls \u00b7 ' + money(tot('today').cost_micros) + '<br><span class="muted">' + svc('today') + '</span></td></tr>' +
+      '<tr><td>7 days</td><td>' + tot('7d').calls + ' calls \u00b7 ' + money(tot('7d').cost_micros) + '<br><span class="muted">' + svc('7d') + '</span></td></tr>' +
+      '<tr><td>30 days</td><td>' + tot('30d').calls + ' calls \u00b7 ' + money(tot('30d').cost_micros) + ' \u00b7 share of company spend ' + share + '</td></tr>' +
       '</table>' +
       '<div class="acts" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">' +
-        '<button class="on" onclick="document.getElementById('gUser').value='' + u.userId + '';document.getElementById('gUser').scrollIntoView()">Grant / extend Pro ↓</button>' +
-        (g ? '<button class="off" onclick="revokePro('' + u.userId + '').then(lookupUser)">Revoke grant</button>' : '') +
-        (sus ? '<button class="on" onclick="unsuspendPaid('' + u.userId + '')">Restore paid services</button>'
-             : '<button class="off" onclick="suspendPaid('' + u.userId + '')">Suspend paid services</button>') +
+        '<button class="on" onclick="document.getElementById(\'gUser\').value=\'' + u.userId + '\';document.getElementById(\'gUser\').scrollIntoView()">Grant / extend Pro \u2193</button>' +
+        (g ? '<button class="off" onclick="revokePro(\'' + u.userId + '\').then(lookupUser)">Revoke grant</button>' : '') +
+        (sus ? '<button class="on" onclick="unsuspendPaid(\'' + u.userId + '\')">Restore paid services</button>'
+             : '<button class="off" onclick="suspendPaid(\'' + u.userId + '\')">Suspend paid services</button>') +
       '</div>' +
       ((u.adminActions || []).length ? '<div class="muted" style="font-size:12px;margin-top:8px">Admin history:<br>' +
-        u.adminActions.map(a => new Date(a.at).toLocaleString() + ' · ' + a.action + (a.reason ? ' · ' + a.reason : '')).join('<br>') + '</div>' : '');
+        u.adminActions.map(a => new Date(a.at).toLocaleString() + ' \u00b7 ' + a.action + (a.reason ? ' \u00b7 ' + a.reason : '')).join('<br>') + '</div>' : '');
   } catch (e) { el.innerHTML = '<div class="err">' + e.message + '</div>'; }
 }
 async function suspendPaid(userId){
-  const why = prompt('Suspend Maps / AI / voice for
-' + userId + '
-
-The account, its data and its subscription stay intact.
-Reason (required, kept in the audit log):');
+  const why = prompt('Suspend Maps / AI / voice for\n' + userId + '\n\nThe account, its data and its subscription stay intact.\nReason (required, kept in the audit log):');
   if (!why) return;
   try { await api('', { method:'POST', body: JSON.stringify({ op:'suspend_paid', userId, reasonNote: why }) }); }
   catch (e) { alert(e.message); }
   lookupUser();
 }
 async function unsuspendPaid(userId){
-  if (!confirm('Restore paid services for
-' + userId + ' ?')) return;
+  if (!confirm('Restore paid services for\n' + userId + ' ?')) return;
   try { await api('', { method:'POST', body: JSON.stringify({ op:'unsuspend_paid', userId, reasonNote: 'restored' }) }); }
   catch (e) { alert(e.message); }
   lookupUser();
 }
 async function rcAudit(){
   const el = document.getElementById('rcAudit');
-  el.textContent = 'Auditing…';
+  el.textContent = 'Auditing\u2026';
   try {
     const a = await api('?op=rc_audit');
     const line = (k, v) => '<tr><td>' + k + '</td><td>' + v + '</td></tr>';
@@ -401,32 +390,32 @@ async function rcAudit(){
       line('UUID with no profile (deleted / QA-era)', a.uuidNoProfile) +
       line('Other shapes', a.other) +
       line('Active Pro in RevenueCat', a.activePro) +
-      line('Backend ≠ RevenueCat mismatches', a.mismatches) +
+      line('Backend \u2260 RevenueCat mismatches', a.mismatches) +
       '</table><div class="foot">entitlement ' + a.entitlement.lookup_key + ' (' + a.entitlement.id + ')' +
-      ' · nothing was changed</div>' +
+      ' \u00b7 nothing was changed</div>' +
       (a.mismatches ? '<div class="anom red">' + a.rows.filter(r => r.mismatch).map(r => r.id +
-        ' — RC ' + (r.activePro ? 'PRO' : 'free') + ' / backend ' + (r.backendPro ? 'PRO' : 'free')).join('<br>') + '</div>' : '') +
+        ' \u2014 RC ' + (r.activePro ? 'PRO' : 'free') + ' / backend ' + (r.backendPro ? 'PRO' : 'free')).join('<br>') + '</div>' : '') +
       (a.rows.some(r => r.activePro) ? '<div class="muted" style="font-size:12px;margin-top:6px">Active Pro: ' +
         a.rows.filter(r => r.activePro).map(r => r.id).join(', ') + '</div>' : '') +
       '<div class="muted" style="font-size:12px;margin-top:8px">Tap a customer for its alias trail (loaded on demand):</div>' +
       '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">' +
         a.rows.map(r => '<button class="' + (r.cls === 'canonical' ? 'on' : 'off') + '" style="font-size:11px;padding:3px 7px" ' +
-          'onclick="rcCustomer('' + r.id.replace(/'/g, '') + '')">' + r.id.slice(0, 18) + (r.id.length > 18 ? '…' : '') + '</button>').join('') +
+          'onclick="rcCustomer(\'' + r.id.replace(/'/g, '') + '\')">' + r.id.slice(0, 18) + (r.id.length > 18 ? '\u2026' : '') + '</button>').join('') +
       '</div><div id="rcCustomer"></div>';
   } catch (e) { el.innerHTML = '<div class="err">' + e.message + '</div>'; }
 }
 async function rcCustomer(id){
   const el = document.getElementById('rcCustomer');
-  el.textContent = 'Loading aliases…';
+  el.textContent = 'Loading aliases\u2026';
   try {
     const c = await api('?op=rc_customer&id=' + encodeURIComponent(id));
     const al = c.aliases;
     el.innerHTML = '<table style="margin-top:8px">' +
       '<tr><td>Customer</td><td><code>' + c.id + '</code></td></tr>' +
       '<tr><td>Active Pro</td><td>' + (c.activePro ? 'yes' : 'no') + '</td></tr>' +
-      '<tr><td>Aliases</td><td>' + al.total + ' · $RCAnonymous ' + al.anonymous + ' · Supabase UUIDs ' + al.uuid + ' · other ' + al.other + '</td></tr>' +
+      '<tr><td>Aliases</td><td>' + al.total + ' \u00b7 $RCAnonymous ' + al.anonymous + ' \u00b7 Supabase UUIDs ' + al.uuid + ' \u00b7 other ' + al.other + '</td></tr>' +
       '</table>' + (al.aliases.length ? '<div class="muted" style="font-size:11px;font-family:ui-monospace,monospace">' +
-        al.aliases.map(x => x.cls + ' · ' + x.id).join('<br>') + '</div>' : '');
+        al.aliases.map(x => x.cls + ' \u00b7 ' + x.id).join('<br>') + '</div>' : '');
   } catch (e) { el.innerHTML = '<div class="err">' + e.message + '</div>'; }
 }
 async function toggleFlag(key, enabled){
