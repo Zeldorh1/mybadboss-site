@@ -29,6 +29,9 @@
              color:var(--muted); margin-bottom:8px; }
   table { width:100%; border-collapse:collapse; font-variant-numeric:tabular-nums; }
   td { padding:3px 0; } td:last-child, td:nth-child(2) { text-align:right; }
+  td + td { padding-left:12px; }
+  #trend td:nth-child(2) { color:var(--muted); white-space:nowrap; }
+  #trend td:nth-child(3) { text-align:left; min-width:120px; }
   td.muted { color:var(--muted); }
   .subnote { color:var(--muted); font-size:11px; font-weight:400; }
   .anom { padding:6px 10px; border-radius:8px; margin:4px 0; font-size:14px; }
@@ -389,7 +392,7 @@ async function rcAudit(){
       line('$RCAnonymousID (SDK-minted, historical debris)', a.anonymous) +
       line('UUID with no profile (deleted / QA-era)', a.uuidNoProfile) +
       line('Other shapes', a.other) +
-      line('Active Pro in RevenueCat', a.activePro) +
+      line('Active Pro in RevenueCat', a.activePro + ' <span class="subnote">(' + a.checked + ' of ' + a.total + ' read individually)</span>') +
       line('Backend \u2260 RevenueCat mismatches', a.mismatches) +
       '</table><div class="foot">entitlement ' + a.entitlement.lookup_key + ' (' + a.entitlement.id + ')' +
       ' \u00b7 nothing was changed</div>' +
