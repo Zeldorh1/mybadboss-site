@@ -47,6 +47,18 @@
                 color:var(--text); font-size:16px; }
   #gate button { background:var(--accent); color:#fff; width:100%; padding:12px; }
   .foot { color:var(--muted); font-size:12px; text-align:center; margin:14px 0; }
+  .grantform { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; }
+  .grantform input, .grantform select { padding:9px; border-radius:9px; border:1px solid var(--border);
+      background:var(--bg); color:var(--text); font-size:14px; }
+  .grantform #gUser, .grantform #gNote, .grantform button { grid-column:1 / -1; }
+  .grant { padding:8px 0; border-bottom:1px solid var(--border); font-size:14px; }
+  .grant:last-child { border-bottom:none; }
+  .grant small { display:block; color:var(--muted); font-family:ui-monospace,monospace; font-size:11px; }
+  .grant .acts { margin-top:4px; display:flex; gap:6px; }
+  .grant .acts button { padding:5px 10px; font-size:12px; }
+  .pill { display:inline-block; padding:1px 8px; border-radius:999px; font-size:11px; font-weight:700; margin-left:6px; }
+  .pill.active { background:#14532d; color:#86efac; } .pill.expired { background:#374151; color:#d1d5db; }
+  .pill.revoked { background:#7f1d1d; color:#fecaca; }
   .err { color:#fca5a5; margin:8px 0; }
 </style>
 </head>
@@ -73,6 +85,10 @@
   <div class="card" id="anomCard" style="display:none">
     <h2>Anomalies</h2><div id="anoms"></div>
   </div>
+  <div class="card" id="trendCard" style="display:none">
+    <h2>Trend &middot; 30d</h2><table id="trend"></table>
+    <div class="foot">Calls-per-day (bar) with active users &amp; est. cost. Watch the launch spike, then the settle to steady-state.</div>
+  </div>
   <div class="card"><h2>Maps &middot; 24h</h2><table id="maps"></table></div>
   <div class="card"><h2>AI &middot; 24h</h2><table id="ai"></table></div>
   <div class="card" id="promiseCard" style="display:none">
@@ -89,6 +105,44 @@
     </div>
   </div>
   <div class="card"><h2>Kill switches</h2><div id="flags"></div></div>
+  <div class="card" id="userCard">
+    <h2>User lookup</h2>
+    <div class="grantform">
+      <input id="uId" placeholder="Support ID (paste from the tester's Settings &rarr; About)" autocomplete="off">
+      <button class="on" onclick="lookupUser()">Look up</button>
+    </div>
+    <div id="userView" class="muted">Paste a Support ID to see tier, Pro source, RevenueCat truth, suspension, usage and cost (today / 7d / 30d), and the admin history.</div>
+  </div>
+  <div class="card" id="proCard">
+    <h2>Pro Access Manager</h2>
+    <div id="proNotConfigured" class="err" style="display:none">
+      Set RC_V2_SECRET_KEY + RC_PRO_ENTITLEMENT_ID (Edge Function secrets) and apply migration 0012.
+    </div>
+    <div class="grantform">
+      <input id="gUser" placeholder="Support ID (full UUID from Settings &rarr; About)" autocomplete="off">
+      <select id="gReason">
+        <option value="beta_tester">Beta tester</option>
+        <option value="founder_vip">Founder / VIP</option>
+        <option value="support_recovery">Support recovery</option>
+        <option value="internal_testing">Internal testing</option>
+        <option value="other">Other</option>
+      </select>
+      <select id="gDays">
+        <option value="7">7 days</option><option value="30">30 days</option>
+        <option value="90" selected>90 days</option><option value="365">1 year</option>
+        <option value="custom">Custom&hellip;</option>
+      </select>
+      <input id="gCustom" type="number" min="1" max="400" placeholder="days" style="display:none">
+      <input id="gNote" placeholder="note (optional)" autocomplete="off">
+      <button class="on" onclick="grantPro()">Grant Pro</button>
+    </div>
+    <div id="grants"></div>
+    <div class="foot">Grants are made IN RevenueCat (promotional entitlement); the backend mirrors what RevenueCat says. Tester taps More &rarr; Refresh Pro access.</div>
+  </div>
+  <div class="card" id="rcCard">
+    <h2>RevenueCat identities <button class="on" style="float:right" onclick="rcAudit()">Run audit</button></h2>
+    <div id="rcAudit" class="muted">Read-only. Classifies every RevenueCat customer against the backend. Deletes nothing.</div>
+  </div>
   <div class="foot" id="stamp"></div>
 </div>
 <script>
@@ -142,6 +196,26 @@ async function refresh(){
     });
     fillTable(document.getElementById('maps'), bySvc('maps'));
     fillTable(document.getElementById('ai'), bySvc('ai'));
+    // Trend (30d): newest day on top, an inline bar sized to the busiest
+    // day so the launch spike + settle read at a glance.
+    const trend = (s.dailyTrend || []).slice().reverse();
+    const trendCard = document.getElementById('trendCard');
+    if (trend.length) {
+      trendCard.style.display = '';
+      const maxCalls = Math.max(1, ...trend.map(d => d.calls));
+      document.getElementById('trend').innerHTML = trend.map(d => {
+        const w = Math.round((d.calls / maxCalls) * 100);
+        return '<tr><td>' + d.day + '</td>' +
+          '<td>' + d.active_users + ' u</td>' +
+          '<td>' + d.calls +
+            '<div style="height:4px;background:#1c2940;border-radius:2px;margin-top:4px">' +
+            '<div style="height:4px;background:#3b82f6;border-radius:2px;width:' + w + '%"></div></div>' +
+          '</td>' +
+          '<td class="muted">' + usd(d.cost_micros) + '</td></tr>';
+      }).join('');
+    } else {
+      trendCard.style.display = 'none';
+    }
     const cl = (s.client24h || []).map(r =>
       '<tr><td>' + r.event + '</td><td>' + r.count + '</td>' +
       '<td class="muted">' + (r.ok ? 'ok' : 'FAIL') + '</td></tr>');
@@ -189,6 +263,161 @@ async function refresh(){
     document.getElementById('gateErr').textContent = e.message;
   }
 }
+document.getElementById('gDays').addEventListener('change', e => {
+  document.getElementById('gCustom').style.display = e.target.value === 'custom' ? '' : 'none';
+});
+function grantDays(){
+  const v = document.getElementById('gDays').value;
+  return v === 'custom' ? Number(document.getElementById('gCustom').value) : Number(v);
+}
+async function loadGrants(){
+  try {
+    const g = await api('?op=grants');
+    document.getElementById('proNotConfigured').style.display = g.configured ? 'none' : '';
+    const fmt = t => t ? new Date(t).toLocaleDateString() : '\u2014';
+    document.getElementById('grants').innerHTML = (g.grants || []).length
+      ? g.grants.map(r =>
+        '<div class="grant"><div>' + r.reason_code.replace('_',' ') +
+        '<span class="pill ' + r.status + '">' + r.status + '</span>' +
+        (r.reason_note ? ' \u00b7 ' + r.reason_note : '') + '</div>' +
+        '<small>' + r.user_id + '</small>' +
+        '<div class="muted" style="font-size:12px">granted ' + fmt(r.granted_at) +
+        ' \u00b7 expires ' + fmt(r.expires_at) +
+        (r.revoked_at ? ' \u00b7 revoked ' + fmt(r.revoked_at) : '') + '</div>' +
+        (r.status === 'active'
+          ? '<div class="acts"><button class="on" onclick="extendPro(\'' + r.user_id + '\')">Extend +30d</button>' +
+            '<button class="off" onclick="revokePro(\'' + r.user_id + '\')">Revoke</button></div>'
+          : '') +
+        '</div>').join('')
+      : '<div class="muted">No grants yet.</div>';
+  } catch (e) {
+    document.getElementById('grants').innerHTML = '<div class="err">' + e.message + '</div>';
+  }
+}
+async function grantPro(){
+  const userId = document.getElementById('gUser').value.trim();
+  const days = grantDays();
+  if (!userId) return alert('Paste the Support ID first.');
+  if (!confirm('Grant Pro for ' + days + ' days to\n' + userId + ' ?')) return;
+  try {
+    const r = await api('', { method:'POST', body: JSON.stringify({
+      op:'grant_pro', userId, days,
+      reasonCode: document.getElementById('gReason').value,
+      reasonNote: document.getElementById('gNote').value.trim(),
+    })});
+    alert('Granted. RevenueCat now says: ' + (r.isPro ? 'PRO' : 'not pro') + '\nExpires ' + new Date(r.expiresAt).toLocaleString());
+    document.getElementById('gUser').value = ''; document.getElementById('gNote').value = '';
+  } catch (e) { alert(e.message); }
+  loadGrants();
+}
+async function extendPro(userId){
+  if (!confirm('Extend Pro by 30 days for\n' + userId + ' ?')) return;
+  try { await api('', { method:'POST', body: JSON.stringify({ op:'extend_pro', userId, days:30 }) }); }
+  catch (e) { alert(e.message); }
+  loadGrants();
+}
+async function revokePro(userId){
+  const why = prompt('Revoke Pro for\n' + userId + '\n\nReason (kept in the ledger):');
+  if (why === null) return;
+  try { await api('', { method:'POST', body: JSON.stringify({ op:'revoke_pro', userId, revokeReason: why }) }); }
+  catch (e) { alert(e.message); }
+  loadGrants();
+}
+function money(m){ return '$' + ((m||0)/1e6).toFixed(3); }
+async function lookupUser(){
+  const id = document.getElementById('uId').value.trim();
+  const el = document.getElementById('userView');
+  if (!id) return;
+  el.textContent = 'Looking up\u2026';
+  try {
+    const u = await api('?op=user&id=' + encodeURIComponent(id));
+    const g = u.activeGrant;
+    const rc = u.revenuecat || {};
+    const tot = w => ((u.usage && u.usage.totals) || []).find(t => t.w === w) || { calls:0, cost_micros:0 };
+    const svc = w => ((u.usage && u.usage.by_service) || []).filter(t => t.w === w)
+      .map(t => t.service + ' ' + t.calls + ' (' + money(t.cost_micros) + ')').join(' \u00b7 ') || '\u2014';
+    const share = u.usage && u.usage.company_30d_cost_micros
+      ? (100 * tot('30d').cost_micros / u.usage.company_30d_cost_micros).toFixed(2) + '%' : '\u2014';
+    const sus = u.controls && u.controls.paid_services_suspended;
+    el.innerHTML =
+      '<table>' +
+      '<tr><td>Tier</td><td><b>' + u.tier.toUpperCase() + '</b>' + (u.proSource ? ' \u00b7 ' + u.proSource : '') + '</td></tr>' +
+      (g ? '<tr><td>Grant</td><td>' + g.reason_code.replace('_',' ') + (g.reason_note ? ' \u00b7 ' + g.reason_note : '') +
+           ' \u00b7 expires ' + new Date(g.expires_at).toLocaleDateString() + '</td></tr>' : '') +
+      '<tr><td>RevenueCat</td><td>' + (rc.error ? '<span class="err">' + rc.error + '</span>'
+          : (rc.known ? (rc.activePro ? 'PRO active' : 'no active Pro') : 'never seen')) + '</td></tr>' +
+      '<tr><td>Backend</td><td>' + (u.profile ? (u.profile.is_pro ? 'is_pro = true' : 'is_pro = false') : 'no profile row') + '</td></tr>' +
+      '<tr><td>Paid services</td><td>' + (sus ? '<span class="err">SUSPENDED \u00b7 ' + (u.controls.suspend_reason || '') + '</span>' : 'normal') + '</td></tr>' +
+      '<tr><td>Last seen</td><td>' + (u.usage && u.usage.last_seen_at ? new Date(u.usage.last_seen_at).toLocaleString() : '\u2014') +
+          ' \u00b7 active days (30d): ' + ((u.usage && u.usage.active_days_30d) || 0) + '</td></tr>' +
+      '<tr><td>Today</td><td>' + tot('today').calls + ' calls \u00b7 ' + money(tot('today').cost_micros) + '<br><span class="muted">' + svc('today') + '</span></td></tr>' +
+      '<tr><td>7 days</td><td>' + tot('7d').calls + ' calls \u00b7 ' + money(tot('7d').cost_micros) + '<br><span class="muted">' + svc('7d') + '</span></td></tr>' +
+      '<tr><td>30 days</td><td>' + tot('30d').calls + ' calls \u00b7 ' + money(tot('30d').cost_micros) + ' \u00b7 share of company spend ' + share + '</td></tr>' +
+      '</table>' +
+      '<div class="acts" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">' +
+        '<button class="on" onclick="document.getElementById(\'gUser\').value=\'' + u.userId + '\';document.getElementById(\'gUser\').scrollIntoView()">Grant / extend Pro \u2193</button>' +
+        (g ? '<button class="off" onclick="revokePro(\'' + u.userId + '\').then(lookupUser)">Revoke grant</button>' : '') +
+        (sus ? '<button class="on" onclick="unsuspendPaid(\'' + u.userId + '\')">Restore paid services</button>'
+             : '<button class="off" onclick="suspendPaid(\'' + u.userId + '\')">Suspend paid services</button>') +
+      '</div>' +
+      ((u.adminActions || []).length ? '<div class="muted" style="font-size:12px;margin-top:8px">Admin history:<br>' +
+        u.adminActions.map(a => new Date(a.at).toLocaleString() + ' \u00b7 ' + a.action + (a.reason ? ' \u00b7 ' + a.reason : '')).join('<br>') + '</div>' : '');
+  } catch (e) { el.innerHTML = '<div class="err">' + e.message + '</div>'; }
+}
+async function suspendPaid(userId){
+  const why = prompt('Suspend Maps / AI / voice for\n' + userId + '\n\nThe account, its data and its subscription stay intact.\nReason (required, kept in the audit log):');
+  if (!why) return;
+  try { await api('', { method:'POST', body: JSON.stringify({ op:'suspend_paid', userId, reasonNote: why }) }); }
+  catch (e) { alert(e.message); }
+  lookupUser();
+}
+async function unsuspendPaid(userId){
+  if (!confirm('Restore paid services for\n' + userId + ' ?')) return;
+  try { await api('', { method:'POST', body: JSON.stringify({ op:'unsuspend_paid', userId, reasonNote: 'restored' }) }); }
+  catch (e) { alert(e.message); }
+  lookupUser();
+}
+async function rcAudit(){
+  const el = document.getElementById('rcAudit');
+  el.textContent = 'Auditing\u2026';
+  try {
+    const a = await api('?op=rc_audit');
+    const line = (k, v) => '<tr><td>' + k + '</td><td>' + v + '</td></tr>';
+    el.innerHTML = '<table>' +
+      line('RevenueCat customers', a.total) +
+      line('Canonical (UUID with live profile)', a.canonical) +
+      line('$RCAnonymousID (SDK-minted, historical debris)', a.anonymous) +
+      line('UUID with no profile (deleted / QA-era)', a.uuidNoProfile) +
+      line('Other shapes', a.other) +
+      line('Active Pro in RevenueCat', a.activePro) +
+      line('Backend \u2260 RevenueCat mismatches', a.mismatches) +
+      '</table><div class="foot">entitlement ' + a.entitlement.lookup_key + ' (' + a.entitlement.id + ')' +
+      ' \u00b7 nothing was changed</div>' +
+      (a.mismatches ? '<div class="anom red">' + a.rows.filter(r => r.mismatch).map(r => r.id +
+        ' \u2014 RC ' + (r.activePro ? 'PRO' : 'free') + ' / backend ' + (r.backendPro ? 'PRO' : 'free')).join('<br>') + '</div>' : '') +
+      (a.rows.some(r => r.activePro) ? '<div class="muted" style="font-size:12px;margin-top:6px">Active Pro: ' +
+        a.rows.filter(r => r.activePro).map(r => r.id).join(', ') + '</div>' : '') +
+      '<div class="muted" style="font-size:12px;margin-top:8px">Tap a customer for its alias trail (loaded on demand):</div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">' +
+        a.rows.map(r => '<button class="' + (r.cls === 'canonical' ? 'on' : 'off') + '" style="font-size:11px;padding:3px 7px" ' +
+          'onclick="rcCustomer(\'' + r.id.replace(/'/g, '') + '\')">' + r.id.slice(0, 18) + (r.id.length > 18 ? '\u2026' : '') + '</button>').join('') +
+      '</div><div id="rcCustomer"></div>';
+  } catch (e) { el.innerHTML = '<div class="err">' + e.message + '</div>'; }
+}
+async function rcCustomer(id){
+  const el = document.getElementById('rcCustomer');
+  el.textContent = 'Loading aliases\u2026';
+  try {
+    const c = await api('?op=rc_customer&id=' + encodeURIComponent(id));
+    const al = c.aliases;
+    el.innerHTML = '<table style="margin-top:8px">' +
+      '<tr><td>Customer</td><td><code>' + c.id + '</code></td></tr>' +
+      '<tr><td>Active Pro</td><td>' + (c.activePro ? 'yes' : 'no') + '</td></tr>' +
+      '<tr><td>Aliases</td><td>' + al.total + ' \u00b7 $RCAnonymous ' + al.anonymous + ' \u00b7 Supabase UUIDs ' + al.uuid + ' \u00b7 other ' + al.other + '</td></tr>' +
+      '</table>' + (al.aliases.length ? '<div class="muted" style="font-size:11px;font-family:ui-monospace,monospace">' +
+        al.aliases.map(x => x.cls + ' \u00b7 ' + x.id).join('<br>') + '</div>' : '');
+  } catch (e) { el.innerHTML = '<div class="err">' + e.message + '</div>'; }
+}
 async function toggleFlag(key, enabled){
   if (!enabled && !confirm('Turn OFF ' + key + ' for every installed build?')) return;
   try { await api('', { method:'POST', body: JSON.stringify({ op:'setflag', key, enabled }) }); }
@@ -196,6 +425,7 @@ async function toggleFlag(key, enabled){
   refresh();
 }
 refresh();
+loadGrants();
 setInterval(refresh, 60000);
 </script>
 </body>
