@@ -2,162 +2,475 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<title>Founder Ops &mdash; My Bad Boss AI</title>
+<meta name="theme-color" content="#0c0d10">
+<title>Founder Ops</title>
+<!--
+  Founder Ops dashboard. ONE source for both copies: the ops Edge Function
+  serves it (page.ts is generated from this file by scripts/build-ops-page.js)
+  and mybadboss.app/ops/ is a byte-identical copy. The page holds no data;
+  every number comes from the token-gated API.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  :root { --bg:#0a0f1c; --card:#111827; --border:#1f2a3f; --text:#e5e9f2;
-          --muted:#8b95a9; --accent:#3b82f6; --green:#22c55e; --yellow:#eab308;
-          --red:#ef4444; }
-  * { box-sizing:border-box; margin:0; }
-  body { background:var(--bg); color:var(--text);
-         font:15px/1.45 system-ui,-apple-system,sans-serif; padding:16px;
-         max-width:760px; margin:0 auto; }
-  h1 { font-size:15px; letter-spacing:2px; color:var(--muted);
-       text-transform:uppercase; margin:4px 0 14px; }
-  .strip { background:var(--card); border:1px solid var(--border);
-           border-radius:14px; padding:16px; margin-bottom:14px; }
-  .status { font-size:26px; font-weight:800; }
-  .status.green{color:var(--green)} .status.yellow{color:var(--yellow)}
-  .status.red{color:var(--red)}
-  .bignums { display:flex; flex-wrap:wrap; gap:14px 26px; margin-top:10px; }
-  .bignums div b { display:block; font-size:19px; }
-  .bignums div span { color:var(--muted); font-size:12px; }
-  .card { background:var(--card); border:1px solid var(--border);
-          border-radius:14px; padding:14px 16px; margin-bottom:12px; }
-  .card h2 { font-size:13px; letter-spacing:1px; text-transform:uppercase;
-             color:var(--muted); margin-bottom:8px; }
-  table { width:100%; border-collapse:collapse; font-variant-numeric:tabular-nums; }
-  td { padding:3px 0; } td:last-child, td:nth-child(2) { text-align:right; }
-  td + td { padding-left:12px; }
-  #trend td:nth-child(2) { color:var(--muted); white-space:nowrap; }
-  #trend td:nth-child(3) { text-align:left; min-width:120px; }
-  td.muted { color:var(--muted); }
-  .subnote { color:var(--muted); font-size:11px; font-weight:400; }
-  .anom { padding:6px 10px; border-radius:8px; margin:4px 0; font-size:14px; }
-  .anom.red { background:#7f1d1d55; color:#fca5a5; }
-  .anom.yellow { background:#713f1255; color:#fde68a; }
-  .flag { display:flex; align-items:center; justify-content:space-between;
-          padding:7px 0; border-bottom:1px solid var(--border); }
-  .flag:last-child { border-bottom:none; }
-  .flag small { display:block; color:var(--muted); }
-  button { border:0; border-radius:9px; padding:8px 14px; font-weight:700;
-           cursor:pointer; font-size:13px; }
-  .on  { background:#14532d; color:#86efac; }
-  .off { background:#7f1d1d; color:#fecaca; }
-  #gate input { width:100%; padding:12px; border-radius:10px; margin:10px 0;
-                border:1px solid var(--border); background:var(--bg);
-                color:var(--text); font-size:16px; }
-  #gate button { background:var(--accent); color:#fff; width:100%; padding:12px; }
-  .foot { color:var(--muted); font-size:12px; text-align:center; margin:14px 0; }
-  .grantform { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; }
-  .grantform input, .grantform select { padding:9px; border-radius:9px; border:1px solid var(--border);
-      background:var(--bg); color:var(--text); font-size:14px; }
-  .grantform #gUser, .grantform #gNote, .grantform button { grid-column:1 / -1; }
-  .grant { padding:8px 0; border-bottom:1px solid var(--border); font-size:14px; }
-  .grant:last-child { border-bottom:none; }
-  .grant small { display:block; color:var(--muted); font-family:ui-monospace,monospace; font-size:11px; }
-  .grant .acts { margin-top:4px; display:flex; gap:6px; }
-  .grant .acts button { padding:5px 10px; font-size:12px; }
-  .pill { display:inline-block; padding:1px 8px; border-radius:999px; font-size:11px; font-weight:700; margin-left:6px; }
-  .pill.active { background:#14532d; color:#86efac; } .pill.expired { background:#374151; color:#d1d5db; }
-  .pill.revoked { background:#7f1d1d; color:#fecaca; }
-  .err { color:#fca5a5; margin:8px 0; }
+  :root {
+    color-scheme: dark;
+    --bg: #0c0d10;
+    --surface: #15171c;
+    --surface-2: #1c1f26;
+    --line: #262a33;
+    --line-soft: #1f232b;
+    --text: #f3f4f6;
+    --text-2: #b4b8c2;
+    --muted: #7d8391;
+    --accent: #3987e5;
+    --accent-soft: rgba(57, 135, 229, .14);
+    --good: #0ca30c;
+    --good-ink: #5fd35f;
+    --good-soft: rgba(12, 163, 12, .14);
+    --warn: #fab219;
+    --warn-ink: #fcc955;
+    --warn-soft: rgba(250, 178, 25, .13);
+    --bad: #d03b3b;
+    --bad-ink: #f07a7a;
+    --bad-soft: rgba(208, 59, 59, .15);
+    --grid: #232730;
+    --radius: 16px;
+    --shadow: 0 1px 0 rgba(255,255,255,.03) inset, 0 8px 24px rgba(0,0,0,.25);
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      color-scheme: light;
+      --bg: #f4f5f7; --surface: #ffffff; --surface-2: #f7f8fa;
+      --line: #e3e5ea; --line-soft: #eceef2;
+      --text: #0f1115; --text-2: #3f4450; --muted: #6b7180;
+      --accent: #2a78d6; --accent-soft: rgba(42, 120, 214, .10);
+      --good-ink: #067a06; --good-soft: rgba(12, 163, 12, .10);
+      --warn-ink: #8a5a00; --warn-soft: rgba(250, 178, 25, .16);
+      --bad-ink: #b42a2a; --bad-soft: rgba(208, 59, 59, .10);
+      --grid: #eceef2;
+      --shadow: 0 1px 2px rgba(16,24,40,.05), 0 4px 16px rgba(16,24,40,.04);
+    }
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    background: var(--bg); color: var(--text);
+    font: 15px/1.5 Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-feature-settings: "cv11", "ss01";
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+  .num, td.n, .kpi b { font-variant-numeric: tabular-nums; }
+  .mono { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 12px; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 16px 48px; }
+
+  /* ---------- top bar + tabs ---------- */
+  header.top {
+    position: sticky; top: 0; z-index: 20;
+    background: color-mix(in srgb, var(--bg) 86%, transparent);
+    backdrop-filter: saturate(160%) blur(14px);
+    -webkit-backdrop-filter: saturate(160%) blur(14px);
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .bar { max-width: 1080px; margin: 0 auto; padding: 12px 16px 0;
+         display: flex; align-items: center; gap: 12px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: -.01em; }
+  .logo { width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center;
+          background: linear-gradient(135deg, #3987e5, #7b61ff); color: #fff; font-size: 14px; }
+  .brand small { display: block; font-weight: 500; color: var(--muted); font-size: 12px; line-height: 1.2; }
+  .spacer { flex: 1; }
+  .stamp { color: var(--muted); font-size: 12px; white-space: nowrap; }
+  .iconbtn { width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--line);
+             background: var(--surface); color: var(--text-2); display: grid; place-items: center;
+             cursor: pointer; font-size: 15px; }
+  .iconbtn:hover { color: var(--text); border-color: var(--muted); }
+  .iconbtn.spin span { display: inline-block; animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  nav.tabs { max-width: 1080px; margin: 0 auto; padding: 10px 16px 0; display: flex; gap: 4px;
+             overflow-x: auto; scrollbar-width: none; }
+  nav.tabs::-webkit-scrollbar { display: none; }
+  nav.tabs button {
+    border: 0; background: none; color: var(--muted); font: inherit; font-weight: 600; font-size: 14px;
+    padding: 8px 12px 12px; cursor: pointer; white-space: nowrap; position: relative; border-radius: 0;
+  }
+  nav.tabs button:hover { color: var(--text-2); }
+  nav.tabs button[aria-selected="true"] { color: var(--text); }
+  nav.tabs button[aria-selected="true"]::after {
+    content: ""; position: absolute; left: 12px; right: 12px; bottom: -1px; height: 2px;
+    border-radius: 2px; background: var(--accent);
+  }
+  nav.tabs .dot[hidden] { display: none; }
+  nav.tabs .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+                  margin-left: 6px; vertical-align: 2px; background: var(--bad); }
+
+  /* ---------- layout ---------- */
+  section.view { display: none; padding-top: 18px; }
+  section.view.active { display: block; animation: fade .18s ease-out; }
+  @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+  .grid { display: grid; gap: 12px; }
+  .g2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .g4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  @media (max-width: 820px) { .g4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 720px) { .g2 { grid-template-columns: 1fr; } }
+  .stack > * + * { margin-top: 12px; }
+
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+          padding: 16px; box-shadow: var(--shadow); min-width: 0; }
+  .card h2 { font-size: 14px; font-weight: 600; letter-spacing: -.005em; display: flex;
+             align-items: center; gap: 8px; }
+  .card h2 .sub { color: var(--muted); font-weight: 500; font-size: 12px; }
+  .card h2 .right { margin-left: auto; }
+  .card .desc { color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+  .card > .body { margin-top: 12px; }
+  .note { color: var(--muted); font-size: 12px; margin-top: 12px; line-height: 1.45; }
+  .muted { color: var(--muted); }
+  .empty { color: var(--muted); font-size: 13px; padding: 18px 0 6px; text-align: center; }
+
+  /* ---------- hero ---------- */
+  .hero { display: flex; gap: 14px; align-items: center; padding: 18px; }
+  .hero .badge { width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center;
+                 font-size: 22px; font-weight: 700; flex: none; }
+  .hero h1 { font-size: 20px; font-weight: 700; letter-spacing: -.02em; line-height: 1.2; }
+  .hero p { color: var(--text-2); font-size: 13.5px; margin-top: 2px; }
+  .s-good .badge { background: var(--good-soft); color: var(--good-ink); }
+  .s-warn .badge { background: var(--warn-soft); color: var(--warn-ink); }
+  .s-bad  .badge { background: var(--bad-soft);  color: var(--bad-ink); }
+
+  /* ---------- KPI tiles ---------- */
+  .kpi { padding: 14px 16px; }
+  .kpi .label { color: var(--muted); font-size: 12px; font-weight: 500; display: flex; align-items: center; gap: 6px; }
+  .kpi b { display: block; font-size: 26px; font-weight: 700; letter-spacing: -.02em; margin-top: 4px; line-height: 1.15; }
+  .kpi .foot { color: var(--muted); font-size: 12px; margin-top: 4px; }
+  .kpi .foot.bad { color: var(--bad-ink); } .kpi .foot.good { color: var(--good-ink); }
+  .kpi .foot.warn { color: var(--warn-ink); }
+
+  /* ---------- status chips + alerts ---------- */
+  .chip { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px; border-radius: 999px;
+          font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .chip.good { background: var(--good-soft); color: var(--good-ink); }
+  .chip.warn { background: var(--warn-soft); color: var(--warn-ink); }
+  .chip.bad  { background: var(--bad-soft);  color: var(--bad-ink); }
+  .chip.neutral { background: var(--surface-2); color: var(--text-2); border: 1px solid var(--line); }
+  .alert { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: 12px;
+           font-size: 13.5px; line-height: 1.45; }
+  .alert + .alert { margin-top: 8px; }
+  .alert .ic { font-weight: 700; flex: none; width: 18px; text-align: center; }
+  .alert.red { background: var(--bad-soft); color: var(--bad-ink); }
+  .alert.yellow { background: var(--warn-soft); color: var(--warn-ink); }
+  .alert.info { background: var(--accent-soft); color: var(--text-2); }
+
+  /* ---------- chart ---------- */
+  .seg { display: inline-flex; background: var(--surface-2); border: 1px solid var(--line);
+         border-radius: 10px; padding: 2px; }
+  .seg button { border: 0; background: none; color: var(--muted); font: inherit; font-size: 12px;
+                font-weight: 600; padding: 5px 10px; border-radius: 8px; cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: var(--surface); color: var(--text);
+                                     box-shadow: 0 1px 2px rgba(0,0,0,.25); }
+  .chart { position: relative; margin-top: 12px; touch-action: pan-y; }
+  .chart svg { display: block; width: 100%; height: 190px; overflow: visible; }
+  .chart .tip { position: absolute; top: 0; pointer-events: none; background: var(--surface-2);
+                border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font-size: 12px;
+                box-shadow: 0 8px 24px rgba(0,0,0,.3); white-space: nowrap; opacity: 0;
+                transition: opacity .1s; transform: translateX(-50%); }
+  .chart .tip b { display: block; font-size: 13px; color: var(--text); }
+  .chart .tip span { color: var(--text-2); }
+  .chart-sum { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 10px; font-size: 12px; color: var(--muted); }
+  .chart-sum b { color: var(--text); font-weight: 600; }
+
+  /* ---------- funnel + meters ---------- */
+  .funnel { display: grid; gap: 10px; }
+  .fstep .top { display: flex; justify-content: space-between; align-items: baseline; font-size: 13.5px; }
+  .fstep .top .n { font-weight: 700; font-variant-numeric: tabular-nums; }
+  .track { height: 8px; border-radius: 999px; background: var(--surface-2); margin-top: 6px; overflow: hidden; }
+  .track i { display: block; height: 100%; border-radius: 999px; background: var(--accent); min-width: 2px; }
+  .track i.bad { background: var(--bad); } .track i.warn { background: var(--warn); }
+  .track i.good { background: var(--good); }
+  .fstep .drop { font-size: 12px; margin-top: 4px; }
+  .fstep .drop.bad { color: var(--bad-ink); } .fstep .drop.warn { color: var(--warn-ink); }
+
+  /* ---------- tables ---------- */
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th { text-align: left; font-weight: 500; color: var(--muted); font-size: 12px; padding: 0 0 8px; }
+  td { padding: 9px 0; border-top: 1px solid var(--line-soft); vertical-align: top; }
+  th + th, td + td { padding-left: 12px; }
+  th.n, td.n { text-align: right; white-space: nowrap; }
+  td .sub { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
+  details.more { margin-top: 12px; }
+  details.more summary { cursor: pointer; color: var(--text-2); font-size: 13px; font-weight: 600; list-style: none; }
+  details.more summary::before { content: "›"; display: inline-block; margin-right: 6px; transition: transform .15s; }
+  details.more[open] summary::before { transform: rotate(90deg); }
+
+  /* ---------- phones ---------- */
+  .phone { border: 1px solid var(--line); border-radius: 14px; padding: 14px; background: var(--surface-2); }
+  .phone .head { display: flex; gap: 10px; align-items: flex-start; }
+  .phone .name { font-weight: 600; font-size: 14.5px; line-height: 1.3; }
+  .phone .meta { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .phone .head .chip { margin-left: auto; }
+  .stages { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 12px; }
+  .stage { background: var(--surface); border: 1px solid var(--line-soft); border-radius: 10px; padding: 8px 10px; }
+  .stage b { display: block; font-size: 17px; font-variant-numeric: tabular-nums; }
+  .stage span { color: var(--muted); font-size: 11.5px; }
+  .stage.bad b { color: var(--bad-ink); }
+  .phone ul { list-style: none; padding: 0; margin-top: 10px; font-size: 12.5px; }
+  .phone li { padding: 3px 0; color: var(--text-2); }
+  .phone li.bad { color: var(--bad-ink); } .phone li.warn { color: var(--warn-ink); }
+
+  /* ---------- forms + buttons (admin) ---------- */
+  input, select {
+    width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line);
+    background: var(--surface-2); color: var(--text); font: inherit; font-size: 14px;
+  }
+  input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  button { font: inherit; }
+  .btn, .on, .off {
+    border: 1px solid transparent; border-radius: 10px; padding: 9px 14px; font-weight: 600;
+    font-size: 13.5px; cursor: pointer; white-space: nowrap;
+  }
+  .btn { background: var(--accent); color: #fff; }
+  .btn.ghost { background: var(--surface-2); color: var(--text); border-color: var(--line); }
+  .on  { background: var(--good-soft); color: var(--good-ink); border-color: color-mix(in srgb, var(--good) 30%, transparent); }
+  .off { background: var(--bad-soft);  color: var(--bad-ink);  border-color: color-mix(in srgb, var(--bad) 30%, transparent); }
+  .btn:hover, .on:hover, .off:hover { filter: brightness(1.1); }
+  .row { display: flex; gap: 8px; }
+  .row > input { flex: 1; }
+  .grantform { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+  .grantform #gUser, .grantform #gNote, .grantform > button { grid-column: 1 / -1; }
+  .grant { padding: 12px 0; border-top: 1px solid var(--line-soft); font-size: 14px; }
+  .grant small { display: block; color: var(--muted); font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 11.5px; margin-top: 2px; }
+  .grant .acts, .acts { margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; }
+  .grant .acts button { padding: 6px 10px; font-size: 12.5px; }
+  .pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; margin-left: 6px; }
+  .pill.active { background: var(--good-soft); color: var(--good-ink); }
+  .pill.expired { background: var(--surface-2); color: var(--muted); }
+  .pill.revoked { background: var(--bad-soft); color: var(--bad-ink); }
+  .flag { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line-soft); }
+  .flag:first-child { border-top: 0; padding-top: 2px; }
+  .flag > div { flex: 1; min-width: 0; }
+  .flag .k { font-weight: 600; font-size: 14px; }
+  .flag small { display: block; color: var(--muted); font-size: 12px; }
+  .flag button { min-width: 64px; }
+  .err { color: var(--bad-ink); font-size: 13px; margin: 8px 0; }
+  .subnote { color: var(--muted); font-size: 11px; font-weight: 400; }
+  .foot { color: var(--muted); font-size: 12px; margin-top: 12px; }
+  .kv td:first-child { color: var(--muted); width: 38%; }
+  code { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 12px; }
+
+  /* ---------- gate ---------- */
+  #gate { max-width: 400px; margin: 12vh auto 0; }
+  #gate .card { padding: 24px; }
+  #gate h1 { font-size: 20px; letter-spacing: -.02em; margin: 14px 0 4px; }
+  #gate p { color: var(--muted); font-size: 13.5px; margin-bottom: 16px; }
+  #gate .btn { width: 100%; margin-top: 10px; padding: 12px; }
+
+  .skeleton { background: linear-gradient(90deg, var(--surface-2), var(--line-soft), var(--surface-2));
+              background-size: 200% 100%; animation: sk 1.2s infinite; border-radius: 8px; color: transparent !important; }
+  @keyframes sk { to { background-position: -200% 0; } }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 </style>
 </head>
 <body>
-<h1>&#128737;&#65039; Founder Ops</h1>
-<div id="gate" class="strip">
-  <div>Dashboard token</div>
-  <input id="tok" type="password" autocomplete="off" placeholder="paste the 32-char token">
-  <button onclick="saveTok()">Unlock</button>
-  <div id="gateErr" class="err"></div>
+
+<div id="gate" class="wrap">
+  <div class="card">
+    <div class="logo" aria-hidden="true">&#9679;</div>
+    <h1>Founder Ops</h1>
+    <p>My Bad Boss AI &middot; private dashboard. Paste your dashboard token to continue.</p>
+    <input id="tok" type="password" autocomplete="off" placeholder="32-character token" onkeydown="if(event.key==='Enter')saveTok()">
+    <button class="btn" onclick="saveTok()">Unlock</button>
+    <div id="gateErr" class="err"></div>
+  </div>
 </div>
+
 <div id="dash" style="display:none">
-  <div class="strip">
-    <div class="status" id="status">&hellip;</div>
-    <div class="bignums">
-      <div><b id="active">&mdash;</b><span>active users &middot; 24h</span></div>
-      <div><b id="cost">&mdash;</b><span>est. API cost &middot; month (list)</span></div>
-      <div><b id="billable">&mdash;</b><span>billable after free tier</span></div>
-      <div><b id="proj">&mdash;</b><span>projected vs budget</span></div>
-      <div><b id="rev">&mdash;</b><span>revenue (connect RC)</span></div>
-      <div><b id="anomCount">&mdash;</b><span>anomalies</span></div>
+  <header class="top">
+    <div class="bar">
+      <div class="brand"><div class="logo" aria-hidden="true">&#9679;</div>
+        <div>Founder Ops<small>My Bad Boss AI</small></div></div>
+      <div class="spacer"></div>
+      <span class="stamp" id="stamp"></span>
+      <button class="iconbtn" id="refreshBtn" onclick="refresh(true)" aria-label="Refresh" title="Refresh"><span>&#8635;</span></button>
     </div>
-  </div>
-  <div class="card" id="anomCard" style="display:none">
-    <h2>Anomalies</h2><div id="anoms"></div>
-  </div>
-  <div class="card" id="trendCard" style="display:none">
-    <h2>Trend &middot; 30d</h2><table id="trend"></table>
-    <div class="foot">Calls-per-day (bar) with active users &amp; est. cost. Watch the launch spike, then the settle to steady-state.</div>
-  </div>
-  <div class="card"><h2>Maps &middot; 24h</h2><table id="maps"></table></div>
-  <div class="card"><h2>AI &middot; 24h</h2><table id="ai"></table></div>
-  <div class="card" id="promiseCard" style="display:none">
-    <h2>Core promise &middot; 24h</h2><table id="promise"></table>
-    <div class="foot">The alarm lifecycle funnel: scheduled &rarr; fired &rarr;
-      wake surfaced &rarr; acknowledged &rarr; departure answered &rarr;
-      ledger settled. A step that drops to zero while the one above it
-      doesn't is where the silence is.</div>
-  </div>
-  <div class="card"><h2>Alarm telemetry &middot; 24h</h2><table id="client"></table>
-    <div class="foot" id="clientNote" style="display:none">
-      No client events yet &mdash; V1B telemetry ships with this app build:
-      receipts appear after the first alarm fires on an installed build.
-    </div>
-  </div>
-  <div class="card"><h2>Kill switches</h2><div id="flags"></div></div>
-  <div class="card" id="userCard">
-    <h2>User lookup</h2>
-    <div class="grantform">
-      <input id="uId" placeholder="Support ID (paste from the tester's Settings &rarr; About)" autocomplete="off">
-      <button class="on" onclick="lookupUser()">Look up</button>
-    </div>
-    <div id="userView" class="muted">Paste a Support ID to see tier, Pro source, RevenueCat truth, suspension, usage and cost (today / 7d / 30d), and the admin history.</div>
-  </div>
-  <div class="card" id="proCard">
-    <h2>Pro Access Manager</h2>
-    <div id="proNotConfigured" class="err" style="display:none">
-      Set RC_V2_SECRET_KEY + RC_PRO_ENTITLEMENT_ID (Edge Function secrets) and apply migration 0012.
-    </div>
-    <div class="grantform">
-      <input id="gUser" placeholder="Support ID (full UUID from Settings &rarr; About)" autocomplete="off">
-      <select id="gReason">
-        <option value="beta_tester">Beta tester</option>
-        <option value="founder_vip">Founder / VIP</option>
-        <option value="support_recovery">Support recovery</option>
-        <option value="internal_testing">Internal testing</option>
-        <option value="other">Other</option>
-      </select>
-      <select id="gDays">
-        <option value="7">7 days</option><option value="30">30 days</option>
-        <option value="90" selected>90 days</option><option value="365">1 year</option>
-        <option value="custom">Custom&hellip;</option>
-      </select>
-      <input id="gCustom" type="number" min="1" max="400" placeholder="days" style="display:none">
-      <input id="gNote" placeholder="note (optional)" autocomplete="off">
-      <button class="on" onclick="grantPro()">Grant Pro</button>
-    </div>
-    <div id="grants"></div>
-    <div class="foot">Grants are made IN RevenueCat (promotional entitlement); the backend mirrors what RevenueCat says. Tester taps More &rarr; Refresh Pro access.</div>
-  </div>
-  <div class="card" id="rcCard">
-    <h2>RevenueCat identities <button class="on" style="float:right" onclick="rcAudit()">Run audit</button></h2>
-    <div id="rcAudit" class="muted">Read-only. Classifies every RevenueCat customer against the backend. Deletes nothing.</div>
-  </div>
-  <div class="card" id="cleanupCard">
-    <h2>Identity cleanup <button class="on" style="float:right" onclick="cleanupPreview()">Preview (dry run)</button></h2>
-    <div id="cleanup" class="muted">Preview removes nothing. It lists the RevenueCat customers and abandoned Supabase guests that pass every keep rule (no active Pro, no active grant, no paid call or sign-in in the last 14 days, read individually). Removing is a second, separate confirmation per list.</div>
-  </div>
-  <div class="foot" id="stamp"></div>
+    <nav class="tabs" role="tablist" aria-label="Sections">
+      <button role="tab" data-tab="overview" aria-selected="true">Overview</button>
+      <button role="tab" data-tab="alarms">Alarms<span class="dot" id="dotAlarms" hidden></span></button>
+      <button role="tab" data-tab="phones">Phones<span class="dot" id="dotPhones" hidden></span></button>
+      <button role="tab" data-tab="costs">Costs</button>
+      <button role="tab" data-tab="people">People</button>
+      <button role="tab" data-tab="controls">Controls</button>
+    </nav>
+  </header>
+
+  <main class="wrap">
+    <!-- ================= OVERVIEW ================= -->
+    <section class="view active" id="v-overview">
+      <div class="stack">
+        <div class="card hero" id="hero">
+          <div class="badge" id="heroBadge">&hellip;</div>
+          <div><h1 id="heroTitle">Loading&hellip;</h1><p id="heroSub"></p></div>
+        </div>
+        <div class="grid g4">
+          <div class="card kpi"><div class="label">Wakes answered &middot; 24h</div><b id="kAnswered">&mdash;</b><div class="foot" id="kAnsweredFoot"></div></div>
+          <div class="card kpi"><div class="label">Sound failures &middot; 24h</div><b id="kSound">&mdash;</b><div class="foot" id="kSoundFoot"></div></div>
+          <div class="card kpi"><div class="label">Active users &middot; 24h</div><b id="kUsers">&mdash;</b><div class="foot" id="kUsersFoot"></div></div>
+          <div class="card kpi"><div class="label">API cost &middot; this month</div><b id="kCost">&mdash;</b><div class="foot" id="kCostFoot"></div></div>
+        </div>
+        <div class="card" id="anomCard" hidden>
+          <h2>Needs attention</h2>
+          <div class="body" id="anoms"></div>
+        </div>
+        <div class="card">
+          <h2>Last 30 days <span class="right seg" id="trendSeg">
+            <button data-m="calls" aria-pressed="true">Calls</button>
+            <button data-m="active_users" aria-pressed="false">Users</button>
+            <button data-m="cost_micros" aria-pressed="false">Cost</button></span></h2>
+          <div class="chart" id="trendChart"><svg id="trendSvg" role="img" aria-label="Daily trend"></svg><div class="tip" id="trendTip"></div></div>
+          <div class="chart-sum" id="trendSum"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= ALARMS ================= -->
+    <section class="view" id="v-alarms">
+      <div class="grid g2">
+        <div class="card">
+          <h2>Wake alarms <span class="sub">last 24h</span></h2>
+          <div class="desc">Each ring counted once per step, whichever path rang it. A step lower than the one above it is where a ring got lost.</div>
+          <div class="body funnel" id="ringFunnel"></div>
+        </div>
+        <div class="card">
+          <h2>Leaving on time <span class="sub">last 24h</span></h2>
+          <div class="desc">The departure checks that follow a wake, and the trips they close out.</div>
+          <div class="body funnel" id="departFunnel"></div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:12px">
+        <h2>Scheduling <span class="sub">last 24h</span></h2>
+        <div class="body" id="scheduling"></div>
+        <details class="more"><summary>Every alarm event</summary>
+          <table style="margin-top:10px"><thead><tr><th>Event</th><th class="n">Count</th><th class="n">Result</th></tr></thead>
+          <tbody id="client"></tbody></table>
+        </details>
+      </div>
+    </section>
+
+    <!-- ================= PHONES ================= -->
+    <section class="view" id="v-phones">
+      <div class="card">
+        <h2>Phones <span class="sub">last 7 days &middot; worst first</span></h2>
+        <div class="desc">Alarm results by phone model, Android version and app build: which phone to test a failure on.</div>
+        <div class="body grid" id="devices"></div>
+      </div>
+    </section>
+
+    <!-- ================= COSTS ================= -->
+    <section class="view" id="v-costs">
+      <div class="stack">
+        <div class="grid g2">
+          <div class="card kpi"><div class="label">Billable this month</div><b id="cBill">&mdash;</b><div class="foot" id="cBillFoot"></div></div>
+          <div class="card kpi"><div class="label">Projected at list price</div><b id="cProj">&mdash;</b>
+            <div class="track"><i id="cProjBar" style="width:0"></i></div><div class="foot" id="cProjFoot"></div></div>
+        </div>
+        <div class="grid g2">
+          <div class="card"><h2>Maps <span class="sub">last 24h</span></h2>
+            <table class="body"><thead><tr><th>Call</th><th class="n">Calls</th><th class="n">List</th></tr></thead><tbody id="maps"></tbody></table></div>
+          <div class="card"><h2>AI <span class="sub">last 24h</span></h2>
+            <table class="body"><thead><tr><th>Call</th><th class="n">Calls</th><th class="n">List</th></tr></thead><tbody id="ai"></tbody></table></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= PEOPLE ================= -->
+    <section class="view" id="v-people">
+      <div class="stack">
+        <div class="card" id="userCard">
+          <h2>Look up a user</h2>
+          <div class="desc">Support ID from the tester's Settings &rarr; About, or from a copied Alarm protection readout.</div>
+          <div class="row" style="margin-top:12px">
+            <input id="uId" placeholder="Support ID" autocomplete="off" onkeydown="if(event.key==='Enter')lookupUser()">
+            <button class="btn" onclick="lookupUser()">Look up</button>
+          </div>
+          <div id="userView" class="note">Shows their phone, app build, alarm access and recent alarm events, plus tier, Pro source, RevenueCat, suspension, usage and admin history.</div>
+        </div>
+        <div class="card" id="proCard">
+          <h2>Pro access</h2>
+          <div class="desc">Grants are made in RevenueCat (promotional entitlement); the backend mirrors what RevenueCat says. The tester taps More &rarr; Refresh Pro access.</div>
+          <div id="proNotConfigured" class="err" style="display:none">
+            Set RC_V2_SECRET_KEY + RC_PRO_ENTITLEMENT_ID (Edge Function secrets) and apply migration 0012.
+          </div>
+          <div class="grantform">
+            <input id="gUser" placeholder="Support ID (full UUID)" autocomplete="off">
+            <select id="gReason">
+              <option value="beta_tester">Beta tester</option>
+              <option value="founder_vip">Founder / VIP</option>
+              <option value="support_recovery">Support recovery</option>
+              <option value="internal_testing">Internal testing</option>
+              <option value="other">Other</option>
+            </select>
+            <select id="gDays">
+              <option value="7">7 days</option><option value="30">30 days</option>
+              <option value="90" selected>90 days</option><option value="365">1 year</option>
+              <option value="custom">Custom&hellip;</option>
+            </select>
+            <input id="gCustom" type="number" min="1" max="400" placeholder="days" style="display:none">
+            <input id="gNote" placeholder="Note (optional)" autocomplete="off">
+            <button class="btn" onclick="grantPro()">Grant Pro</button>
+          </div>
+          <div id="grants" style="margin-top:8px"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= CONTROLS ================= -->
+    <section class="view" id="v-controls">
+      <div class="stack">
+        <div class="card"><h2>Kill switches</h2>
+          <div class="desc">Turning one off applies to every installed build on its next request.</div>
+          <div class="body" id="flags"></div></div>
+        <div class="card" id="rcCard">
+          <h2>RevenueCat identities <button class="btn ghost right" onclick="rcAudit()">Run audit</button></h2>
+          <div id="rcAudit" class="note">Read-only. Classifies every RevenueCat customer against the backend. Deletes nothing.</div>
+        </div>
+        <div class="card" id="cleanupCard">
+          <h2>Identity cleanup <button class="btn ghost right" onclick="cleanupPreview()">Preview</button></h2>
+          <div id="cleanup" class="note">Preview removes nothing. It lists the RevenueCat customers and abandoned guests that pass every keep rule (no active Pro, no active grant, no paid call or sign-in in the last 14 days, read individually). Removing is a second, separate confirmation per list.</div>
+        </div>
+      </div>
+    </section>
+  </main>
 </div>
+
 <script>
-const FN = 'https://jzishmeasvilyfpedicy.supabase.co/functions/v1/ops';
-let tok = localStorage.getItem('opsTok') || '';
-function saveTok(){ tok = document.getElementById('tok').value.trim();
-  localStorage.setItem('opsTok', tok); refresh(); }
-function usd(m){ return '$' + (m/1e6).toFixed(2); }
+// The Edge Function serves this page itself; mybadboss.app/ops/ is a copy.
+const FN = /\.supabase\.co$/.test(location.hostname)
+  ? location.origin + location.pathname
+  : 'https://jzishmeasvilyfpedicy.supabase.co/functions/v1/ops';
+let tok = '';
+try { tok = localStorage.getItem('opsTok') || ''; } catch (e) {}
+let last = null;
+let trendMetric = 'calls';
+
+function saveTok(){
+  tok = document.getElementById('tok').value.trim();
+  try { localStorage.setItem('opsTok', tok); } catch (e) {}
+  refresh(true);
+}
+function esc(v){
+  return String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function usd(m){ return '$' + ((m || 0) / 1e6).toFixed(2); }
+function money(m){ return '$' + ((m || 0) / 1e6).toFixed(3); }
+function fmtN(n){ return (n || 0).toLocaleString(); }
+function ago(iso){
+  const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
+  if (s < 90) return 'just now';
+  if (s < 3600) return Math.round(s / 60) + ' min ago';
+  if (s < 86400) return Math.round(s / 3600) + ' h ago';
+  return Math.round(s / 86400) + ' d ago';
+}
 async function api(params, opts){
   const r = await fetch(FN + params, Object.assign({
     headers: { 'Authorization': 'Bearer ' + tok, 'Content-Type': 'application/json' }
@@ -166,110 +479,316 @@ async function api(params, opts){
   if (!r.ok) throw new Error(j.error || ('HTTP ' + r.status));
   return j;
 }
-function fillTable(el, rows){
-  el.innerHTML = rows.length
-    ? rows.join('')
-    : '<tr><td class="muted">nothing in the last 24h</td></tr>';
+
+// ---------- tabs ----------
+function showTab(name){
+  document.querySelectorAll('nav.tabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === name)));
+  document.querySelectorAll('section.view').forEach(v => v.classList.toggle('active', v.id === 'v-' + name));
+  try { localStorage.setItem('opsTab', name); } catch (e) {}
+  if (name === 'overview' && last) drawTrend(last.dailyTrend || []);
+  window.scrollTo({ top: 0 });
 }
-async function refresh(){
-  if (!tok) return;
-  try {
-    const s = await api('?op=summary');
-    document.getElementById('gate').style.display = 'none';
-    document.getElementById('dash').style.display = '';
-    const st = document.getElementById('status');
-    st.textContent = 'SYSTEM: ' + s.status.toUpperCase();
-    st.className = 'status ' + s.status;
-    document.getElementById('active').textContent = s.activeUsers24h;
-    document.getElementById('cost').textContent = '$' + s.monthCostUsd.toFixed(2);
-    document.getElementById('billable').textContent =
-      s.monthBillableUsd == null ? '\u2014' : '$' + s.monthBillableUsd.toFixed(2);
-    document.getElementById('proj').textContent =
-      '$' + s.monthProjectedUsd + ' / $' + s.monthlyBudgetUsd;
-    document.getElementById('rev').textContent = s.revenue == null ? '\u2014' : ('$' + s.revenue);
-    document.getElementById('anomCount').textContent = s.anomalies.length;
-    const ac = document.getElementById('anomCard');
-    ac.style.display = s.anomalies.length ? '' : 'none';
-    document.getElementById('anoms').innerHTML = s.anomalies
-      .map(a => '<div class="anom ' + a.level + '">' + a.text + '</div>').join('');
-    const bySvc = svc => s.usage24h.filter(r => r.service === svc).map(r => {
-      const m = (s.usageMonth || []).find(x => x.service === svc && x.op === r.op);
-      const sub = m && m.free_allowance != null
-        ? '<div class="subnote">(' + m.remaining_free.toLocaleString() + ' of ' +
-          m.free_allowance.toLocaleString() + ' free calls left this month)</div>'
-        : '';
-      return '<tr><td>' + r.op + sub + '</td><td>' + r.calls + ' calls</td>' +
-        '<td class="muted">' + usd(r.cost_micros) + '</td></tr>';
-    });
-    fillTable(document.getElementById('maps'), bySvc('maps'));
-    fillTable(document.getElementById('ai'), bySvc('ai'));
-    // Trend (30d): newest day on top, an inline bar sized to the busiest
-    // day so the launch spike + settle read at a glance.
-    const trend = (s.dailyTrend || []).slice().reverse();
-    const trendCard = document.getElementById('trendCard');
-    if (trend.length) {
-      trendCard.style.display = '';
-      const maxCalls = Math.max(1, ...trend.map(d => d.calls));
-      document.getElementById('trend').innerHTML = trend.map(d => {
-        const w = Math.round((d.calls / maxCalls) * 100);
-        return '<tr><td>' + d.day + '</td>' +
-          '<td>' + d.active_users + ' u</td>' +
-          '<td>' + d.calls +
-            '<div style="height:4px;background:#1c2940;border-radius:2px;margin-top:4px">' +
-            '<div style="height:4px;background:#3b82f6;border-radius:2px;width:' + w + '%"></div></div>' +
-          '</td>' +
-          '<td class="muted">' + usd(d.cost_micros) + '</td></tr>';
-      }).join('');
-    } else {
-      trendCard.style.display = 'none';
-    }
-    const cl = (s.client24h || []).map(r =>
-      '<tr><td>' + r.event + '</td><td>' + r.count + '</td>' +
-      '<td class="muted">' + (r.ok ? 'ok' : 'FAIL') + '</td></tr>');
-    fillTable(document.getElementById('client'), cl);
-    document.getElementById('clientNote').style.display = cl.length ? 'none' : '';
-    // Core-promise funnel: compact lifecycle view computed from the
-    // same client rows (the raw table above stays for drill-down).
-    const evCount = (names) => (s.client24h || [])
-      .filter(r => names.indexOf(r.event) >= 0)
+document.querySelectorAll('nav.tabs button').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
+document.querySelectorAll('#trendSeg button').forEach(b => b.addEventListener('click', () => {
+  trendMetric = b.dataset.m;
+  document.querySelectorAll('#trendSeg button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  if (last) drawTrend(last.dailyTrend || []);
+}));
+
+// ---------- counts ----------
+function counter(rows){
+  return function(names, ok){
+    return rows.filter(r => names.indexOf(r.event) >= 0 && (ok == null || r.ok === ok))
       .reduce((t, r) => t + r.count, 0);
-    const schedFail = evCount(['alarm_schedule_failure']);
-    const funnel = [
-      ['Scheduled (hourly heartbeat)', evCount(['alarm_schedule_success']),
-        schedFail ? schedFail + ' FAILURES' : ''],
-      ['Alarms fired', evCount(['work_alarm_fired','snooze_alarm_fired',
-        'quick_alarm_fired','timer_fired','nap_guard_fired']), ''],
-      ['Wake surfaced', evCount(['wake_screen_shown']), ''],
-      ['Acknowledged', evCount(['alarm_acknowledged']), ''],
-      ['Departure fired', evCount(['departure_check_fired',
-        'departure_verify_fired','departure_unack_fired']), ''],
-      ['Departure answered', evCount(['departure_acknowledged']), ''],
-      ['Ledger settled', evCount(['ledger_settled']), ''],
-    ];
-    const promiseCard = document.getElementById('promiseCard');
-    if (cl.length) {
-      promiseCard.style.display = '';
-      fillTable(document.getElementById('promise'), funnel.map(f =>
-        '<tr><td>' + f[0] + '</td><td>' + f[1] + '</td>' +
-        '<td class="muted" style="color:' + (f[2] ? '#f87171' : '') + '">' +
-        f[2] + '</td></tr>'));
-    } else {
-      promiseCard.style.display = 'none';
-    }
-    document.getElementById('flags').innerHTML = (s.flags || []).map(f =>
-      '<div class="flag"><div>' + f.key + '<small>' + (f.note || '') + '</small></div>' +
-      '<button class="' + (f.enabled ? 'on' : 'off') + '" onclick="toggleFlag(\'' +
-      f.key + '\',' + !f.enabled + ')">' + (f.enabled ? 'ON' : 'OFF') + '</button></div>'
-    ).join('');
-    document.getElementById('stamp').textContent =
-      'updated ' + new Date(s.generatedAt).toLocaleTimeString() +
-      ' \u00b7 list price for anomaly rules \u00b7 billable = after Google free' +
-      ' allowances (routing modeled conservatively) \u00b7 refreshes every 60s';
-  } catch (e) {
-    document.getElementById('gate').style.display = '';
-    document.getElementById('gateErr').textContent = e.message;
+  };
+}
+
+// ---------- render ----------
+function renderHero(s, c){
+  const hero = document.getElementById('hero');
+  const map = { green: ['s-good', '✓', 'All systems normal'],
+                yellow: ['s-warn', '!', 'Worth a look'],
+                red: ['s-bad', '×', 'Action needed'] };
+  const m = map[s.status] || map.yellow;
+  hero.className = 'card hero ' + m[0];
+  document.getElementById('heroBadge').textContent = m[1];
+  document.getElementById('heroTitle').textContent = m[2];
+  const rang = c(['ring_rang']);
+  document.getElementById('heroSub').textContent = s.anomalies.length
+    ? s.anomalies[0].text + (s.anomalies.length > 1 ? ' (+' + (s.anomalies.length - 1) + ' more)' : '')
+    : (rang ? rang + ' alarm ring' + (rang === 1 ? '' : 's') + ' in the last 24h, no anomalies.'
+            : 'No anomalies in the last 24h.');
+}
+
+function renderKpis(s, c){
+  const rang = c(['ring_rang']), answered = c(['ring_answered']);
+  const soundFail = c(['ring_sound'], false), sound = c(['ring_sound'], true);
+  const ka = document.getElementById('kAnswered'), kaf = document.getElementById('kAnsweredFoot');
+  if (rang || answered) {
+    ka.textContent = fmtN(answered);
+    kaf.textContent = 'of ' + fmtN(rang) + ' ring' + (rang === 1 ? '' : 's');
+    kaf.className = 'foot';
+  } else {
+    ka.textContent = '—';
+    kaf.textContent = 'Needs the app build with ring tracking';
+    kaf.className = 'foot';
+  }
+  document.getElementById('kSound').textContent = (rang || sound || soundFail) ? fmtN(soundFail) : '—';
+  const ksf = document.getElementById('kSoundFoot');
+  ksf.textContent = soundFail ? 'A ring played no sound' : (sound ? fmtN(sound) + ' played sound' : '');
+  ksf.className = 'foot ' + (soundFail ? 'bad' : sound ? 'good' : '');
+  document.getElementById('kUsers').textContent = fmtN(s.activeUsers24h);
+  const trend = s.dailyTrend || [];
+  const prev = trend.slice(-8, -1).map(d => d.active_users);
+  document.getElementById('kUsersFoot').textContent = prev.length
+    ? 'avg ' + (prev.reduce((a, b) => a + b, 0) / prev.length).toFixed(1) + ' / day last week' : '';
+  const kc = document.getElementById('kCost'), kcf = document.getElementById('kCostFoot');
+  if (s.monthBillableUsd != null) {
+    kc.textContent = '$' + s.monthBillableUsd.toFixed(2);
+    kcf.textContent = 'billable · $' + s.monthCostUsd.toFixed(2) + ' at list price';
+  } else {
+    kc.textContent = '$' + s.monthCostUsd.toFixed(2);
+    kcf.textContent = 'list price, before free allowances';
   }
 }
+
+function renderAnoms(s){
+  const card = document.getElementById('anomCard');
+  card.hidden = !s.anomalies.length;
+  document.getElementById('anoms').innerHTML = s.anomalies.map(a =>
+    '<div class="alert ' + (a.level === 'red' ? 'red' : 'yellow') + '"><span class="ic">' +
+    (a.level === 'red' ? '×' : '!') + '</span><div>' + esc(a.text) + '</div></div>').join('');
+}
+
+function niceMax(v){
+  if (v <= 0) return 1;
+  const p = Math.pow(10, Math.floor(Math.log10(v)));
+  const f = v / p;
+  return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * p;
+}
+function drawTrend(days){
+  const svg = document.getElementById('trendSvg');
+  const tip = document.getElementById('trendTip');
+  const W = svg.clientWidth || 600, H = 190, padL = 34, padB = 22, padT = 8;
+  const m = trendMetric;
+  const val = d => m === 'cost_micros' ? (d.cost_micros || 0) / 1e6 : (d[m] || 0);
+  const fmt = v => m === 'cost_micros' ? '$' + v.toFixed(2) : fmtN(Math.round(v));
+  if (!days.length) {
+    svg.innerHTML = '';
+    document.getElementById('trendSum').innerHTML = '<span>No usage recorded yet (migration 0009).</span>';
+    return;
+  }
+  const max = niceMax(Math.max.apply(null, days.map(val)));
+  const n = days.length, iw = W - padL, ih = H - padB - padT;
+  const slot = iw / n, bw = Math.max(2, slot - 2);
+  const y = v => padT + ih - (v / max) * ih;
+  let g = '';
+  [0, .5, 1].forEach(t => {
+    const yy = y(max * t);
+    g += '<line x1="' + padL + '" x2="' + W + '" y1="' + yy + '" y2="' + yy + '" stroke="var(--grid)" stroke-width="1"/>' +
+         '<text x="' + (padL - 8) + '" y="' + (yy + 4) + '" text-anchor="end" font-size="10.5" fill="var(--muted)">' +
+         (m === 'cost_micros' ? '$' + (max * t).toFixed(max * t < 10 ? 2 : 0) : fmtN(max * t)) + '</text>';
+  });
+  let bars = '';
+  days.forEach((d, i) => {
+    const v = val(d), x = padL + i * slot + 1, top = y(v), h = padT + ih - top;
+    const r = Math.min(4, bw / 2, h);
+    const path = h <= 0 ? '' : 'M' + x + ',' + (padT + ih) + 'V' + (top + r) +
+      'Q' + x + ',' + top + ' ' + (x + r) + ',' + top + 'H' + (x + bw - r) +
+      'Q' + (x + bw) + ',' + top + ' ' + (x + bw) + ',' + (top + r) + 'V' + (padT + ih) + 'Z';
+    bars += '<path data-i="' + i + '" d="' + path + '" fill="var(--accent)" opacity="' + (i === n - 1 ? 1 : .78) + '"/>';
+  });
+  const lbl = (i, anchor) => '<text x="' + (padL + i * slot + slot / 2) + '" y="' + (H - 4) + '" text-anchor="' + anchor +
+    '" font-size="10.5" fill="var(--muted)">' + days[i].day.slice(5).replace('-', '/') + '</text>';
+  svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+  svg.innerHTML = g + bars + lbl(0, 'start') + lbl(Math.floor((n - 1) / 2), 'middle') + lbl(n - 1, 'end') +
+    '<rect id="trendHit" x="' + padL + '" y="0" width="' + iw + '" height="' + H + '" fill="transparent"/>';
+  const hit = svg.querySelector('#trendHit');
+  const show = ev => {
+    const rect = svg.getBoundingClientRect();
+    const i = Math.max(0, Math.min(n - 1, Math.floor(((ev.clientX - rect.left) * (W / rect.width) - padL) / slot)));
+    const d = days[i];
+    svg.querySelectorAll('path').forEach(p => p.setAttribute('opacity', p.dataset.i == i ? 1 : .35));
+    tip.innerHTML = '<b>' + new Date(d.day + 'T12:00:00').toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' }) +
+      '</b><span>' + fmtN(d.calls) + ' calls · ' + d.active_users + ' user' + (d.active_users === 1 ? '' : 's') +
+      ' · ' + usd(d.cost_micros) + '</span>';
+    const cx = (padL + i * slot + slot / 2) * (rect.width / W);
+    tip.style.left = Math.max(70, Math.min(rect.width - 70, cx)) + 'px';
+    tip.style.top = '0px';
+    tip.style.opacity = 1;
+  };
+  const hide = () => { tip.style.opacity = 0; svg.querySelectorAll('path').forEach((p, j) => p.setAttribute('opacity', j === n - 1 ? 1 : .78)); };
+  hit.addEventListener('pointermove', show);
+  hit.addEventListener('pointerdown', show);
+  hit.addEventListener('pointerleave', hide);
+  const total = days.reduce((a, d) => a + val(d), 0);
+  const peak = days.reduce((a, d) => val(d) > val(a) ? d : a, days[0]);
+  const lastWeek = days.slice(-7).reduce((a, d) => a + val(d), 0) / Math.min(7, days.length);
+  document.getElementById('trendSum').innerHTML =
+    '<span>Total <b>' + fmt(total) + '</b></span>' +
+    '<span>Last 7 days <b>' + fmt(lastWeek) + '</b>/day</span>' +
+    '<span>Peak <b>' + fmt(val(peak)) + '</b> on ' + peak.day.slice(5).replace('-', '/') + '</span>';
+}
+
+function funnel(el, steps){
+  const top = Math.max(1, ...steps.map(s => s[1]));
+  el.innerHTML = steps.map((s, i) => {
+    const prev = i > 0 ? steps[i - 1][1] : null;
+    const lost = prev != null && s[3] !== false && s[1] < prev ? prev - s[1] : 0;
+    const cls = s[2] || (lost ? 'warn' : '');
+    return '<div class="fstep"><div class="top"><span>' + s[0] + '</span><span class="n">' + fmtN(s[1]) + '</span></div>' +
+      '<div class="track"><i class="' + cls + '" style="width:' + (s[1] / top * 100) + '%"></i></div>' +
+      (s[4] ? '<div class="drop ' + (s[5] || 'bad') + '">' + s[4] + '</div>'
+            : lost ? '<div class="drop warn">' + lost + ' fewer than the step above</div>' : '') +
+      '</div>';
+  }).join('');
+}
+
+function renderAlarms(s, c){
+  const rang = c(['ring_rang']), sound = c(['ring_sound'], true), soundFail = c(['ring_sound'], false);
+  const shown = c(['ring_shown']), answered = c(['ring_answered']);
+  const ringEl = document.getElementById('ringFunnel');
+  if (rang + sound + soundFail + shown + answered === 0) {
+    const legacy = c(['work_alarm_fired','snooze_alarm_fired','quick_alarm_fired','timer_fired','nap_guard_fired']);
+    ringEl.innerHTML = '<div class="alert info"><span class="ic">i</span><div>No ring tracking yet: it starts with the next app build. ' +
+      (legacy ? 'Older counter: ' + legacy + ' alarm' + (legacy === 1 ? '' : 's') + ' fired.' : '') + '</div></div>';
+  } else {
+    funnel(ringEl, [
+      ['Rang', rang],
+      ['Sound played', sound, soundFail ? 'bad' : '', true, soundFail ? soundFail + ' played NO sound' : '', 'bad'],
+      ['Alarm screen shown', shown],
+      ['Answered (snooze or stop)', answered],
+    ]);
+  }
+  funnel(document.getElementById('departFunnel'), [
+    ['Departure checks', c(['departure_check_fired','departure_verify_fired','departure_unack_fired'])],
+    ['Answered', c(['departure_acknowledged'])],
+    ['Trips closed out', c(['ledger_settled']), '', false],
+  ]);
+  const beats = c(['alarm_schedule_success']), fails = c(['alarm_schedule_failure']);
+  const crashes = c(['native_crash']);
+  document.getElementById('scheduling').innerHTML =
+    '<div class="grid g2">' +
+    '<div><span class="chip ' + (fails ? 'bad' : 'good') + '">' + (fails ? '× ' + fails + ' failed' : '✓ No failures') + '</span>' +
+    '<div class="note" style="margin-top:6px">' + fmtN(beats) + ' successful scheduling passes. The app re-checks its alarms whenever it wakes, several times an hour; these rows cost nothing.</div></div>' +
+    '<div><span class="chip ' + (crashes ? 'bad' : 'good') + '">' + (crashes ? '× ' + crashes + ' native crash' + (crashes === 1 ? '' : 'es') : '✓ No native crashes') + '</span>' +
+    '<div class="note" style="margin-top:6px">Crashes in the phone-side alarm code. The Phones tab names the phone and build.</div></div></div>';
+  const rows = (s.client24h || []).slice().sort((a, b) => b.count - a.count);
+  document.getElementById('client').innerHTML = rows.length
+    ? rows.map(r => '<tr><td class="mono">' + esc(r.event) + '</td><td class="n">' + fmtN(r.count) + '</td><td class="n">' +
+        (r.ok ? '<span class="chip good">ok</span>' : '<span class="chip bad">fail</span>') + '</td></tr>').join('')
+    : '<tr><td colspan="3" class="empty">No alarm events in the last 24h.</td></tr>';
+  const dot = soundFail || fails || crashes;
+  document.getElementById('dotAlarms').hidden = !dot;
+}
+
+function renderPhones(s){
+  const el = document.getElementById('devices');
+  const devs = s.deviceHealth || [];
+  let anyBad = false;
+  if (s.deviceHealthReady === false) {
+    el.innerHTML = '<div class="alert info"><span class="ic">i</span><div>Apply <code>supabase/migrations/0014_ops_device_health.sql</code> in the Supabase SQL Editor to see results by phone.</div></div>';
+  } else if (!devs.length) {
+    el.innerHTML = '<div class="empty">No alarm events from any phone in the last 7 days.</div>';
+  } else {
+    el.innerHTML = devs.map(d => {
+      const bad = d.failures + d.crashes + (d.sound_failed || 0);
+      if (bad) anyBad = true;
+      const warn = d.access_missing_users > 0;
+      const chip = bad ? '<span class="chip bad">× ' + bad + ' problem' + (bad === 1 ? '' : 's') + '</span>'
+        : warn ? '<span class="chip warn">! Access missing</span>' : '<span class="chip good">✓ Healthy</span>';
+      const hasRing = (d.rang || 0) + (d.sound || 0) + (d.shown || 0) + (d.answered || 0) > 0;
+      const st = (label, v, cls) => '<div class="stage ' + (cls || '') + '"><b>' + fmtN(v) + '</b><span>' + label + '</span></div>';
+      const stages = hasRing
+        ? st('rang', d.rang) + st('sound', d.sound, d.sound_failed ? 'bad' : '') + st('shown', d.shown) + st('answered', d.answered)
+        : st('fired', d.fired) + st('shown', d.surfaced) + st('failures', d.failures, d.failures ? 'bad' : '') + st('crashes', d.crashes, d.crashes ? 'bad' : '');
+      const items = [];
+      if (d.sound_failed) items.push('<li class="bad">× ' + d.sound_failed + ' ring' + (d.sound_failed === 1 ? '' : 's') + ' played no sound</li>');
+      if (hasRing && d.crashes) items.push('<li class="bad">× ' + d.crashes + ' native crash' + (d.crashes === 1 ? '' : 'es') + '</li>');
+      if (hasRing && d.failures) items.push('<li class="bad">× ' + d.failures + ' failed event' + (d.failures === 1 ? '' : 's') + '</li>');
+      if (warn) items.push('<li class="warn">! ' + d.access_missing_users + ' user' + (d.access_missing_users === 1 ? '' : 's') +
+        ' missing alarm access: ' + esc((d.access_missing || []).join(' / ').replace(/_/g, ' ')) + '</li>');
+      (d.top_errors || []).forEach(e => items.push('<li class="mono">' + esc(e.error) + ' ×' + e.count + '</li>'));
+      return '<div class="phone"><div class="head"><div><div class="name">' + esc(d.device) + '</div>' +
+        '<div class="meta">App ' + esc(d.app_version) + ' · ' + d.users + ' user' + (d.users === 1 ? '' : 's') +
+        ' · seen ' + ago(d.last_at) + '</div></div>' + chip + '</div>' +
+        '<div class="stages">' + stages + '</div>' + (items.length ? '<ul>' + items.join('') + '</ul>' : '') + '</div>';
+    }).join('');
+  }
+  document.getElementById('dotPhones').hidden = !anyBad;
+}
+
+function renderCosts(s){
+  const bill = document.getElementById('cBill'), bf = document.getElementById('cBillFoot');
+  if (s.monthBillableUsd != null) {
+    bill.textContent = '$' + s.monthBillableUsd.toFixed(2);
+    bf.textContent = 'after Google’s monthly free allowances · $' + s.monthCostUsd.toFixed(2) + ' at list price';
+  } else {
+    bill.textContent = '—';
+    bf.innerHTML = 'Apply <code>0006_ops_month_usage.sql</code> to see the real bill. List price so far: $' + s.monthCostUsd.toFixed(2) + '.';
+  }
+  document.getElementById('cProj').textContent = '$' + s.monthProjectedUsd + ' of $' + s.monthlyBudgetUsd;
+  const pct = Math.min(100, s.monthProjectedUsd / s.monthlyBudgetUsd * 100);
+  const bar = document.getElementById('cProjBar');
+  bar.style.width = pct + '%';
+  bar.className = pct >= 100 ? 'bad' : pct >= 75 ? 'warn' : 'good';
+  document.getElementById('cProjFoot').textContent = Math.round(pct) + '% of the monthly budget, if every call were billed';
+  const bySvc = svc => s.usage24h.filter(r => r.service === svc).map(r => {
+    const m = (s.usageMonth || []).find(x => x.service === svc && x.op === r.op);
+    const sub = m && m.free_allowance != null
+      ? '<span class="sub">' + fmtN(m.remaining_free) + ' of ' + fmtN(m.free_allowance) + ' free calls left this month</span>' : '';
+    return '<tr><td>' + esc(r.op) + sub + '</td><td class="n">' + fmtN(r.calls) + '</td><td class="n muted">' + usd(r.cost_micros) + '</td></tr>';
+  });
+  const fill = (id, rows) => { document.getElementById(id).innerHTML = rows.length ? rows.join('')
+    : '<tr><td colspan="3" class="empty">Nothing in the last 24h.</td></tr>'; };
+  fill('maps', bySvc('maps'));
+  fill('ai', bySvc('ai'));
+}
+
+function renderFlags(s){
+  document.getElementById('flags').innerHTML = (s.flags || []).map(f =>
+    '<div class="flag"><div><div class="k mono">' + esc(f.key) + '</div><small>' + esc(f.note || '') + '</small></div>' +
+    '<button class="' + (f.enabled ? 'on' : 'off') + '" onclick="toggleFlag(\'' + esc(f.key) + '\',' + !f.enabled + ')">' +
+    (f.enabled ? 'On' : 'Off') + '</button></div>').join('') || '<div class="empty">No kill switches.</div>';
+}
+
+let refreshing = false;
+async function refresh(manual){
+  if (!tok || refreshing) return;
+  refreshing = true;
+  const btn = document.getElementById('refreshBtn');
+  if (manual) btn.classList.add('spin');
+  try {
+    const s = await api('?op=summary');
+    last = s;
+    document.getElementById('gate').style.display = 'none';
+    document.getElementById('dash').style.display = '';
+    const c = counter(s.client24h || []);
+    renderHero(s, c);
+    renderKpis(s, c);
+    renderAnoms(s);
+    renderAlarms(s, c);
+    renderPhones(s);
+    renderCosts(s);
+    renderFlags(s);
+    if (document.getElementById('v-overview').classList.contains('active')) drawTrend(s.dailyTrend || []);
+    document.getElementById('stamp').textContent = 'Updated ' + new Date(s.generatedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  } catch (e) {
+    if (!last) {
+      document.getElementById('gate').style.display = '';
+      document.getElementById('dash').style.display = 'none';
+      document.getElementById('gateErr').textContent = e.message;
+    } else {
+      document.getElementById('stamp').textContent = 'Refresh failed: ' + e.message;
+    }
+  } finally {
+    refreshing = false;
+    btn.classList.remove('spin');
+  }
+}
+window.addEventListener('resize', () => { if (last) drawTrend(last.dailyTrend || []); });
+
+// ---------- people ----------
 document.getElementById('gDays').addEventListener('change', e => {
   document.getElementById('gCustom').style.display = e.target.value === 'custom' ? '' : 'none';
 });
@@ -281,24 +800,24 @@ async function loadGrants(){
   try {
     const g = await api('?op=grants');
     document.getElementById('proNotConfigured').style.display = g.configured ? 'none' : '';
-    const fmt = t => t ? new Date(t).toLocaleDateString() : '\u2014';
+    const fmt = t => t ? new Date(t).toLocaleDateString() : '—';
     document.getElementById('grants').innerHTML = (g.grants || []).length
       ? g.grants.map(r =>
-        '<div class="grant"><div>' + r.reason_code.replace('_',' ') +
-        '<span class="pill ' + r.status + '">' + r.status + '</span>' +
-        (r.reason_note ? ' \u00b7 ' + r.reason_note : '') + '</div>' +
-        '<small>' + r.user_id + '</small>' +
-        '<div class="muted" style="font-size:12px">granted ' + fmt(r.granted_at) +
-        ' \u00b7 expires ' + fmt(r.expires_at) +
-        (r.revoked_at ? ' \u00b7 revoked ' + fmt(r.revoked_at) : '') + '</div>' +
+        '<div class="grant"><div>' + esc(r.reason_code.replace('_', ' ')) +
+        '<span class="pill ' + esc(r.status) + '">' + esc(r.status) + '</span>' +
+        (r.reason_note ? ' · ' + esc(r.reason_note) : '') + '</div>' +
+        '<small>' + esc(r.user_id) + '</small>' +
+        '<div class="muted" style="font-size:12px;margin-top:2px">Granted ' + fmt(r.granted_at) +
+        ' · expires ' + fmt(r.expires_at) +
+        (r.revoked_at ? ' · revoked ' + fmt(r.revoked_at) : '') + '</div>' +
         (r.status === 'active'
-          ? '<div class="acts"><button class="on" onclick="extendPro(\'' + r.user_id + '\')">Extend +30d</button>' +
-            '<button class="off" onclick="revokePro(\'' + r.user_id + '\')">Revoke</button></div>'
+          ? '<div class="acts"><button class="on" onclick="extendPro(\'' + esc(r.user_id) + '\')">Extend +30 days</button>' +
+            '<button class="off" onclick="revokePro(\'' + esc(r.user_id) + '\')">Revoke</button></div>'
           : '') +
         '</div>').join('')
-      : '<div class="muted">No grants yet.</div>';
+      : '<div class="empty">No grants yet.</div>';
   } catch (e) {
-    document.getElementById('grants').innerHTML = '<div class="err">' + e.message + '</div>';
+    document.getElementById('grants').innerHTML = '<div class="err">' + esc(e.message) + '</div>';
   }
 }
 async function grantPro(){
@@ -307,8 +826,8 @@ async function grantPro(){
   if (!userId) return alert('Paste the Support ID first.');
   if (!confirm('Grant Pro for ' + days + ' days to\n' + userId + ' ?')) return;
   try {
-    const r = await api('', { method:'POST', body: JSON.stringify({
-      op:'grant_pro', userId, days,
+    const r = await api('', { method: 'POST', body: JSON.stringify({
+      op: 'grant_pro', userId, days,
       reasonCode: document.getElementById('gReason').value,
       reasonNote: document.getElementById('gNote').value.trim(),
     })});
@@ -319,140 +838,157 @@ async function grantPro(){
 }
 async function extendPro(userId){
   if (!confirm('Extend Pro by 30 days for\n' + userId + ' ?')) return;
-  try { await api('', { method:'POST', body: JSON.stringify({ op:'extend_pro', userId, days:30 }) }); }
+  try { await api('', { method: 'POST', body: JSON.stringify({ op: 'extend_pro', userId, days: 30 }) }); }
   catch (e) { alert(e.message); }
   loadGrants();
 }
 async function revokePro(userId){
   const why = prompt('Revoke Pro for\n' + userId + '\n\nReason (kept in the ledger):');
   if (why === null) return;
-  try { await api('', { method:'POST', body: JSON.stringify({ op:'revoke_pro', userId, revokeReason: why }) }); }
+  try { await api('', { method: 'POST', body: JSON.stringify({ op: 'revoke_pro', userId, revokeReason: why }) }); }
   catch (e) { alert(e.message); }
   loadGrants();
 }
-function money(m){ return '$' + ((m||0)/1e6).toFixed(3); }
+function kv(k, v){ return '<tr><td>' + k + '</td><td>' + v + '</td></tr>'; }
+function phoneRows(p){
+  if (!p) return '';
+  const a = p.access;
+  const ev = (p.events || []).slice(0, 15).map(e =>
+    '<div style="padding:3px 0">' + new Date(e.at).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) +
+    ' · <span class="mono">' + esc(e.event) + '</span>' + (e.ok ? '' : ' <span class="chip bad">fail</span>') +
+    (e.error_class ? ' <span class="muted">' + esc(e.error_class) + '</span>' : '') + '</div>').join('');
+  return kv('Phone', '<b>' + esc(p.device || '—') + '</b><span class="sub">App ' + esc(p.app_version || '—') + '</span>') +
+    kv('Alarm access', a ? (a.ok ? '<span class="chip good">✓ All granted</span>'
+        : '<span class="chip bad">× Missing: ' + esc(String(a.missing || '').replace(/_/g, ' ')) + '</span>') +
+        '<span class="sub">checked ' + ago(a.at) + '</span>' : '<span class="muted">Not reported yet</span>') +
+    (ev ? kv('Recent events', '<div style="font-size:12.5px">' + ev + '</div>') : '');
+}
 async function lookupUser(){
   const id = document.getElementById('uId').value.trim();
   const el = document.getElementById('userView');
   if (!id) return;
-  el.textContent = 'Looking up\u2026';
+  el.textContent = 'Looking up…';
   try {
     const u = await api('?op=user&id=' + encodeURIComponent(id));
     const g = u.activeGrant;
     const rc = u.revenuecat || {};
-    const tot = w => ((u.usage && u.usage.totals) || []).find(t => t.w === w) || { calls:0, cost_micros:0 };
+    const tot = w => ((u.usage && u.usage.totals) || []).find(t => t.w === w) || { calls: 0, cost_micros: 0 };
     const svc = w => ((u.usage && u.usage.by_service) || []).filter(t => t.w === w)
-      .map(t => t.service + ' ' + t.calls + ' (' + money(t.cost_micros) + ')').join(' \u00b7 ') || '\u2014';
+      .map(t => esc(t.service) + ' ' + t.calls + ' (' + money(t.cost_micros) + ')').join(' · ') || '—';
     const share = u.usage && u.usage.company_30d_cost_micros
-      ? (100 * tot('30d').cost_micros / u.usage.company_30d_cost_micros).toFixed(2) + '%' : '\u2014';
+      ? (100 * tot('30d').cost_micros / u.usage.company_30d_cost_micros).toFixed(2) + '%' : '—';
     const sus = u.controls && u.controls.paid_services_suspended;
+    el.className = '';
     el.innerHTML =
-      '<table>' +
-      '<tr><td>Tier</td><td><b>' + u.tier.toUpperCase() + '</b>' + (u.proSource ? ' \u00b7 ' + u.proSource : '') + '</td></tr>' +
-      (g ? '<tr><td>Grant</td><td>' + g.reason_code.replace('_',' ') + (g.reason_note ? ' \u00b7 ' + g.reason_note : '') +
-           ' \u00b7 expires ' + new Date(g.expires_at).toLocaleDateString() + '</td></tr>' : '') +
-      '<tr><td>RevenueCat</td><td>' + (rc.error ? '<span class="err">' + rc.error + '</span>'
-          : (rc.known ? (rc.activePro ? 'PRO active' : 'no active Pro') : 'never seen')) + '</td></tr>' +
-      '<tr><td>Backend</td><td>' + (u.profile ? (u.profile.is_pro ? 'is_pro = true' : 'is_pro = false') : 'no profile row') + '</td></tr>' +
-      '<tr><td>Paid services</td><td>' + (sus ? '<span class="err">SUSPENDED \u00b7 ' + (u.controls.suspend_reason || '') + '</span>' : 'normal') + '</td></tr>' +
-      '<tr><td>Last seen</td><td>' + (u.usage && u.usage.last_seen_at ? new Date(u.usage.last_seen_at).toLocaleString() : '\u2014') +
-          ' \u00b7 active days (30d): ' + ((u.usage && u.usage.active_days_30d) || 0) + '</td></tr>' +
-      '<tr><td>Today</td><td>' + tot('today').calls + ' calls \u00b7 ' + money(tot('today').cost_micros) + '<br><span class="muted">' + svc('today') + '</span></td></tr>' +
-      '<tr><td>7 days</td><td>' + tot('7d').calls + ' calls \u00b7 ' + money(tot('7d').cost_micros) + '<br><span class="muted">' + svc('7d') + '</span></td></tr>' +
-      '<tr><td>30 days</td><td>' + tot('30d').calls + ' calls \u00b7 ' + money(tot('30d').cost_micros) + ' \u00b7 share of company spend ' + share + '</td></tr>' +
+      '<table class="kv" style="margin-top:12px">' +
+      phoneRows(u.phone) +
+      kv('Tier', '<b>' + esc(u.tier.toUpperCase()) + '</b>' + (u.proSource ? ' · ' + esc(u.proSource) : '')) +
+      (g ? kv('Grant', esc(g.reason_code.replace('_', ' ')) + (g.reason_note ? ' · ' + esc(g.reason_note) : '') +
+           ' · expires ' + new Date(g.expires_at).toLocaleDateString()) : '') +
+      kv('RevenueCat', rc.error ? '<span class="err">' + esc(rc.error) + '</span>'
+          : (rc.known ? (rc.activePro ? 'Pro active' : 'No active Pro') : 'Never seen')) +
+      kv('Backend', u.profile ? (u.profile.is_pro ? 'is_pro = true' : 'is_pro = false') : 'No profile row') +
+      kv('Paid services', sus ? '<span class="chip bad">Suspended</span> ' + esc(u.controls.suspend_reason || '') : 'Normal') +
+      kv('Last seen', (u.usage && u.usage.last_seen_at ? new Date(u.usage.last_seen_at).toLocaleString() : '—') +
+          '<span class="sub">Active days (30d): ' + ((u.usage && u.usage.active_days_30d) || 0) + '</span>') +
+      kv('Today', tot('today').calls + ' calls · ' + money(tot('today').cost_micros) + '<span class="sub">' + svc('today') + '</span>') +
+      kv('7 days', tot('7d').calls + ' calls · ' + money(tot('7d').cost_micros) + '<span class="sub">' + svc('7d') + '</span>') +
+      kv('30 days', tot('30d').calls + ' calls · ' + money(tot('30d').cost_micros) + '<span class="sub">Share of company spend ' + share + '</span>') +
       '</table>' +
-      '<div class="acts" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">' +
-        '<button class="on" onclick="document.getElementById(\'gUser\').value=\'' + u.userId + '\';document.getElementById(\'gUser\').scrollIntoView()">Grant / extend Pro \u2193</button>' +
-        (g ? '<button class="off" onclick="revokePro(\'' + u.userId + '\').then(lookupUser)">Revoke grant</button>' : '') +
-        (sus ? '<button class="on" onclick="unsuspendPaid(\'' + u.userId + '\')">Restore paid services</button>'
-             : '<button class="off" onclick="suspendPaid(\'' + u.userId + '\')">Suspend paid services</button>') +
+      '<div class="acts">' +
+        '<button class="on" onclick="document.getElementById(\'gUser\').value=\'' + esc(u.userId) + '\';document.getElementById(\'gUser\').scrollIntoView({behavior:\'smooth\'})">Grant or extend Pro</button>' +
+        (g ? '<button class="off" onclick="revokePro(\'' + esc(u.userId) + '\').then(lookupUser)">Revoke grant</button>' : '') +
+        (sus ? '<button class="on" onclick="unsuspendPaid(\'' + esc(u.userId) + '\')">Restore paid services</button>'
+             : '<button class="off" onclick="suspendPaid(\'' + esc(u.userId) + '\')">Suspend paid services</button>') +
       '</div>' +
-      ((u.adminActions || []).length ? '<div class="muted" style="font-size:12px;margin-top:8px">Admin history:<br>' +
-        u.adminActions.map(a => new Date(a.at).toLocaleString() + ' \u00b7 ' + a.action + (a.reason ? ' \u00b7 ' + a.reason : '')).join('<br>') + '</div>' : '');
-  } catch (e) { el.innerHTML = '<div class="err">' + e.message + '</div>'; }
+      ((u.adminActions || []).length ? '<div class="note">Admin history:<br>' +
+        u.adminActions.map(a => new Date(a.at).toLocaleString() + ' · ' + esc(a.action) + (a.reason ? ' · ' + esc(a.reason) : '')).join('<br>') + '</div>' : '');
+  } catch (e) { el.className = ''; el.innerHTML = '<div class="err">' + esc(e.message) + '</div>'; }
 }
 async function suspendPaid(userId){
   const why = prompt('Suspend Maps / AI / voice for\n' + userId + '\n\nThe account, its data and its subscription stay intact.\nReason (required, kept in the audit log):');
   if (!why) return;
-  try { await api('', { method:'POST', body: JSON.stringify({ op:'suspend_paid', userId, reasonNote: why }) }); }
+  try { await api('', { method: 'POST', body: JSON.stringify({ op: 'suspend_paid', userId, reasonNote: why }) }); }
   catch (e) { alert(e.message); }
   lookupUser();
 }
 async function unsuspendPaid(userId){
   if (!confirm('Restore paid services for\n' + userId + ' ?')) return;
-  try { await api('', { method:'POST', body: JSON.stringify({ op:'unsuspend_paid', userId, reasonNote: 'restored' }) }); }
+  try { await api('', { method: 'POST', body: JSON.stringify({ op: 'unsuspend_paid', userId, reasonNote: 'restored' }) }); }
   catch (e) { alert(e.message); }
   lookupUser();
 }
+
+// ---------- controls ----------
 async function rcAudit(){
   const el = document.getElementById('rcAudit');
-  el.textContent = 'Auditing\u2026';
+  el.textContent = 'Auditing…';
   try {
     const a = await api('?op=rc_audit');
-    const line = (k, v) => '<tr><td>' + k + '</td><td>' + v + '</td></tr>';
-    el.innerHTML = '<table>' +
-      line('RevenueCat customers', a.total) +
-      line('Canonical (UUID with live profile)', a.canonical) +
-      line('$RCAnonymousID (SDK-minted, historical debris)', a.anonymous) +
-      line('UUID with no profile (deleted / QA-era)', a.uuidNoProfile) +
-      line('Other shapes', a.other) +
-      line('Active Pro in RevenueCat', a.activePro + ' <span class="subnote">(' + a.checked + ' of ' + a.total + ' read individually)</span>') +
-      line('Backend \u2260 RevenueCat mismatches', a.mismatches) +
-      '</table><div class="foot">entitlement ' + a.entitlement.lookup_key + ' (' + a.entitlement.id + ')' +
-      ' \u00b7 nothing was changed</div>' +
-      (a.mismatches ? '<div class="anom red">' + a.rows.filter(r => r.mismatch).map(r => r.id +
-        ' \u2014 RC ' + (r.activePro ? 'PRO' : 'free') + ' / backend ' + (r.backendPro ? 'PRO' : 'free')).join('<br>') + '</div>' : '') +
-      (a.rows.some(r => r.activePro) ? '<div class="muted" style="font-size:12px;margin-top:6px">Active Pro: ' +
-        a.rows.filter(r => r.activePro).map(r => r.id).join(', ') + '</div>' : '') +
-      '<div class="muted" style="font-size:12px;margin-top:8px">Tap a customer for its alias trail (loaded on demand):</div>' +
-      '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">' +
-        a.rows.map(r => '<button class="' + (r.cls === 'canonical' ? 'on' : 'off') + '" style="font-size:11px;padding:3px 7px" ' +
-          'onclick="rcCustomer(\'' + r.id.replace(/'/g, '') + '\')">' + r.id.slice(0, 18) + (r.id.length > 18 ? '\u2026' : '') + '</button>').join('') +
+    el.className = '';
+    el.innerHTML = '<table class="kv" style="margin-top:12px">' +
+      kv('RevenueCat customers', a.total) +
+      kv('Canonical (UUID with live profile)', a.canonical) +
+      kv('$RCAnonymousID (SDK-minted, historical debris)', a.anonymous) +
+      kv('UUID with no profile (deleted / QA-era)', a.uuidNoProfile) +
+      kv('Other shapes', a.other) +
+      kv('Active Pro in RevenueCat', a.activePro + ' <span class="subnote">(' + a.checked + ' of ' + a.total + ' read individually)</span>') +
+      kv('Backend ≠ RevenueCat mismatches', a.mismatches) +
+      '</table><div class="foot">Entitlement ' + esc(a.entitlement.lookup_key) + ' (' + esc(a.entitlement.id) + ') · nothing was changed</div>' +
+      (a.mismatches ? '<div class="alert red" style="margin-top:8px"><span class="ic">×</span><div>' + a.rows.filter(r => r.mismatch).map(r => esc(r.id) +
+        ' — RC ' + (r.activePro ? 'PRO' : 'free') + ' / backend ' + (r.backendPro ? 'PRO' : 'free')).join('<br>') + '</div></div>' : '') +
+      (a.rows.some(r => r.activePro) ? '<div class="note">Active Pro: ' +
+        a.rows.filter(r => r.activePro).map(r => esc(r.id)).join(', ') + '</div>' : '') +
+      '<div class="note">Tap a customer for its alias trail:</div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">' +
+        a.rows.map(r => '<button class="' + (r.cls === 'canonical' ? 'on' : 'off') + '" style="font-size:11px;padding:4px 8px" ' +
+          'onclick="rcCustomer(\'' + esc(r.id.replace(/'/g, '')) + '\')">' + esc(r.id.slice(0, 18)) + (r.id.length > 18 ? '…' : '') + '</button>').join('') +
       '</div><div id="rcCustomer"></div>';
-  } catch (e) { el.innerHTML = '<div class="err">' + e.message + '</div>'; }
+  } catch (e) { el.innerHTML = '<div class="err">' + esc(e.message) + '</div>'; }
 }
 async function rcCustomer(id){
   const el = document.getElementById('rcCustomer');
-  el.textContent = 'Loading aliases\u2026';
+  el.textContent = 'Loading aliases…';
   try {
     const c = await api('?op=rc_customer&id=' + encodeURIComponent(id));
     const al = c.aliases;
-    el.innerHTML = '<table style="margin-top:8px">' +
-      '<tr><td>Customer</td><td><code>' + c.id + '</code></td></tr>' +
-      '<tr><td>Active Pro</td><td>' + (c.activePro ? 'yes' : 'no') + '</td></tr>' +
-      '<tr><td>Aliases</td><td>' + al.total + ' \u00b7 $RCAnonymous ' + al.anonymous + ' \u00b7 Supabase UUIDs ' + al.uuid + ' \u00b7 other ' + al.other + '</td></tr>' +
-      '</table>' + (al.aliases.length ? '<div class="muted" style="font-size:11px;font-family:ui-monospace,monospace">' +
-        al.aliases.map(x => x.cls + ' \u00b7 ' + x.id).join('<br>') + '</div>' : '');
-  } catch (e) { el.innerHTML = '<div class="err">' + e.message + '</div>'; }
+    el.innerHTML = '<table class="kv" style="margin-top:10px">' +
+      kv('Customer', '<code>' + esc(c.id) + '</code>') +
+      kv('Active Pro', c.activePro ? 'yes' : 'no') +
+      kv('Aliases', al.total + ' · $RCAnonymous ' + al.anonymous + ' · Supabase UUIDs ' + al.uuid + ' · other ' + al.other) +
+      '</table>' + (al.aliases.length ? '<div class="mono muted" style="font-size:11px;margin-top:6px">' +
+        al.aliases.map(x => esc(x.cls) + ' · ' + esc(x.id)).join('<br>') + '</div>' : '');
+  } catch (e) { el.innerHTML = '<div class="err">' + esc(e.message) + '</div>'; }
 }
 let cleanupPlan = null;
 async function cleanupPreview(){
   const el = document.getElementById('cleanup');
-  el.textContent = 'Auditing every customer and every guest\u2026 (reads only)';
+  el.textContent = 'Auditing every customer and every guest… (reads only)';
   try {
     const [rc, guests] = await Promise.all([api('?op=rc_cleanup_plan'), api('?op=guest_cleanup_plan')]);
     cleanupPlan = { rc, guests };
-    const byCls = list => ['anonymous','canonical','uuid_no_profile','other']
-      .map(c => c + ' ' + list.filter(x => x.cls === c).length).join(' \u00b7 ');
-    const keepWhy = list => { const m = {}; list.forEach(k => m[k.reason] = (m[k.reason]||0)+1);
-      return Object.keys(m).map(k => k + ' ' + m[k]).join(' \u00b7 ') || '\u2014'; };
-    el.innerHTML = '<table>' +
-      '<tr><td>RevenueCat customers to remove</td><td><b>' + rc.delete.length + '</b> of ' + rc.total + '</td></tr>' +
-      '<tr><td class="muted">by class</td><td class="muted">' + byCls(rc.delete) + '</td></tr>' +
-      '<tr><td>RevenueCat customers kept</td><td>' + rc.keep.length + '</td></tr>' +
-      '<tr><td class="muted">why kept</td><td class="muted">' + keepWhy(rc.keep) + '</td></tr>' +
-      '<tr><td>Supabase guests to remove</td><td><b>' + guests.delete.length + '</b></td></tr>' +
-      '<tr><td>Supabase guests / accounts kept</td><td>' + guests.keep.length + '</td></tr>' +
-      '<tr><td class="muted">why kept</td><td class="muted">' + keepWhy(guests.keep) + '</td></tr>' +
+    const byCls = list => ['anonymous', 'canonical', 'uuid_no_profile', 'other']
+      .map(c => c + ' ' + list.filter(x => x.cls === c).length).join(' · ');
+    const keepWhy = list => { const m = {}; list.forEach(k => m[k.reason] = (m[k.reason] || 0) + 1);
+      return Object.keys(m).map(k => k + ' ' + m[k]).join(' · ') || '—'; };
+    el.className = '';
+    el.innerHTML = '<table class="kv" style="margin-top:12px">' +
+      kv('RevenueCat customers to remove', '<b>' + rc.delete.length + '</b> of ' + rc.total) +
+      kv('by class', '<span class="muted">' + byCls(rc.delete) + '</span>') +
+      kv('RevenueCat customers kept', rc.keep.length) +
+      kv('why kept', '<span class="muted">' + esc(keepWhy(rc.keep)) + '</span>') +
+      kv('Guests to remove', '<b>' + guests.delete.length + '</b>') +
+      kv('Guests / accounts kept', guests.keep.length) +
+      kv('why kept', '<span class="muted">' + esc(keepWhy(guests.keep)) + '</span>') +
       '</table>' +
-      '<div class="muted" style="font-size:11px;font-family:ui-monospace,monospace;margin-top:6px">kept in RevenueCat:<br>' +
-        rc.keep.map(k => k.reason + ' \u00b7 ' + k.id).join('<br>') + '</div>' +
-      '<div class="acts" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">' +
+      '<details class="more"><summary>Kept in RevenueCat</summary><div class="mono muted" style="font-size:11px;margin-top:6px">' +
+        rc.keep.map(k => esc(k.reason) + ' · ' + esc(k.id)).join('<br>') + '</div></details>' +
+      '<div class="acts">' +
         (guests.delete.length ? '<button class="off" onclick="cleanupRun(\'guest\')">Remove ' + guests.delete.length + ' abandoned guests</button>' : '') +
         (rc.delete.length ? '<button class="off" onclick="cleanupRun(\'rc\')">Remove ' + rc.delete.length + ' RevenueCat customers</button>' : '') +
       '</div>' +
       '<div class="foot">Order: guests first (their RevenueCat customers then fall out as no-profile debris), then RevenueCat. Every removal is logged to the admin ledger.</div>';
-  } catch (e) { el.innerHTML = '<div class="err">' + e.message + '</div>'; }
+  } catch (e) { el.innerHTML = '<div class="err">' + esc(e.message) + '</div>'; }
 }
 async function cleanupRun(kind){
   if (!cleanupPlan) return alert('Preview first.');
@@ -460,10 +996,10 @@ async function cleanupRun(kind){
   const label = kind === 'rc' ? 'RevenueCat customers' : 'abandoned Supabase guests';
   if (!confirm('Permanently remove ' + list.length + ' ' + label + '?\n\nEverything with active Pro, an active grant, or activity in the last 14 days is protected and will be refused by the server even if listed.')) return;
   const el = document.getElementById('cleanup');
-  el.textContent = 'Removing\u2026';
+  el.textContent = 'Removing…';
   try {
-    const r = await api('', { method:'POST', body: JSON.stringify({ op: kind === 'rc' ? 'rc_cleanup' : 'guest_cleanup', ids: list.map(x => x.id) }) });
-    alert('Removed ' + r.deleted + ' \u00b7 refused by keep rules ' + r.refused + ' \u00b7 failed ' + r.failed.length +
+    const r = await api('', { method: 'POST', body: JSON.stringify({ op: kind === 'rc' ? 'rc_cleanup' : 'guest_cleanup', ids: list.map(x => x.id) }) });
+    alert('Removed ' + r.deleted + ' · refused by keep rules ' + r.refused + ' · failed ' + r.failed.length +
       (r.failed.length ? '\n' + r.failed.map(f => f.id + ': ' + f.error).join('\n') : ''));
   } catch (e) { alert(e.message); }
   cleanupPlan = null;
@@ -471,10 +1007,12 @@ async function cleanupRun(kind){
 }
 async function toggleFlag(key, enabled){
   if (!enabled && !confirm('Turn OFF ' + key + ' for every installed build?')) return;
-  try { await api('', { method:'POST', body: JSON.stringify({ op:'setflag', key, enabled }) }); }
+  try { await api('', { method: 'POST', body: JSON.stringify({ op: 'setflag', key, enabled }) }); }
   catch (e) { alert(e.message); }
-  refresh();
+  refresh(true);
 }
+
+try { const t = localStorage.getItem('opsTab'); if (t && document.getElementById('v-' + t)) showTab(t); } catch (e) {}
 refresh();
 loadGrants();
 setInterval(refresh, 60000);
