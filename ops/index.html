@@ -339,6 +339,13 @@
           <table class="legend-t" style="width:100%;margin-top:10px"><tbody id="srcLegend"></tbody></table>
           <p class="foot" id="srcFoot" style="margin-top:8px"></p>
         </div>
+        <div class="card" id="cpuCard">
+          <h2>Cost per user
+            <span class="right seg" id="cpuSeg"><button data-v="provider" aria-pressed="true">By provider</button><button data-v="activity" aria-pressed="false">By activity</button></span></h2>
+          <p class="foot" style="margin:0 0 6px">Average per active user, projected to a month.</p>
+          <div style="overflow-x:auto"><table class="body"><thead id="cpuHead"></thead><tbody id="cpu"></tbody></table></div>
+          <p class="foot" id="cpuFoot" style="margin-top:8px"></p>
+        </div>
         <div class="card">
           <h2>Last 30 days <span class="right seg" id="trendSeg">
             <button data-m="calls" aria-pressed="true">Calls</button>
@@ -520,14 +527,14 @@ function showTab(name){
   document.querySelectorAll('nav.tabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === name)));
   document.querySelectorAll('section.view').forEach(v => v.classList.toggle('active', v.id === 'v-' + name));
   try { localStorage.setItem('opsTab', name); } catch (e) {}
-  if (name === 'overview' && last) { drawTrend(last.dailyTrend || []); drawSources(last.bySource); }
+  if (name === 'overview' && last) { drawTrend(last.dailyTrend || []); drawSources(last.bySource); renderCostPerUser(last.costPerUser, last.costByActivity); }
   window.scrollTo({ top: 0 });
 }
 document.querySelectorAll('nav.tabs button').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
 document.querySelectorAll('#trendSeg button').forEach(b => b.addEventListener('click', () => {
   trendMetric = b.dataset.m;
   document.querySelectorAll('#trendSeg button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
-  if (last) { drawTrend(last.dailyTrend || []); drawSources(last.bySource); }
+  if (last) { drawTrend(last.dailyTrend || []); drawSources(last.bySource); renderCostPerUser(last.costPerUser, last.costByActivity); }
 }));
 
 // ---------- counts ----------
@@ -707,6 +714,72 @@ document.querySelectorAll('#srcMetric button').forEach(b => b.addEventListener('
   srcMetric = b.dataset.m;
   document.querySelectorAll('#srcMetric button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
   if (last) drawSources(last.bySource);
+}));
+
+// COST PER USER (migration 0022, owner 2026-09-28): the average over the
+// last 1/7/14/30 days, so its direction is visible. Per user per day = cost
+// ÷ user-days; per month = × 30. Provider columns are per user per month and
+// add up to the total. First-paid-tier estimates (the at-scale marginal cost).
+let cpuView = 'provider';
+const ACTIVITIES = [
+  ['automatic', 'Automatic'],   // protection that runs on its own
+  ['viewing', 'Viewing'],       // only while the app is open
+  ['action', 'User actions'],   // setup, address search, drafts
+  ['untagged', 'Untagged'],     // builds before caller tags
+];
+function renderCostPerUser(rows, byActivity){
+  const head = document.getElementById('cpuHead'), body = document.getElementById('cpu'), foot = document.getElementById('cpuFoot');
+  const act = cpuView === 'activity';
+  const src = act ? byActivity : rows;
+  if (!src) {
+    head.innerHTML = '';
+    body.innerHTML = '<tr><td class="empty">Apply <code>' + (act ? '0023_cost_by_activity.sql' : '0022_cost_per_user.sql') + '</code> to see this.</td></tr>';
+    foot.textContent = '';
+    return;
+  }
+  const m = v => v == null ? '—' : '$' + Number(v).toFixed(Number(v) < 1 ? 3 : 2);
+  const label = d => d === 1 ? '24h' : d + ' days';
+  const wins = [1, 7, 14, 30];
+  const allAt = d => (rows || []).find(r => Number(r.days) === d && r.provider === 'all');
+  if (!act) {
+    head.innerHTML = '<tr><th>Last</th><th class="n">Per user / month</th><th class="n">/ day</th><th class="n">Google</th><th class="n">Mapbox</th><th class="n">Weather</th><th class="n">AI</th><th class="n">Users</th></tr>';
+    const at = (d, p) => rows.find(r => Number(r.days) === d && r.provider === p);
+    body.innerHTML = wins.map(d => {
+      const a = at(d, 'all');
+      if (!a) return '<tr><td>' + label(d) + '</td><td colspan="7" class="empty">No provider calls.</td></tr>';
+      const pm = p => { const r = at(d, p); return r ? m(r.per_user_month) : m(0); };
+      return '<tr><td style="white-space:nowrap">' + label(d) + '</td><td class="n"><b>' + m(a.per_user_month) + '</b></td><td class="n">' + m(a.per_user_day) +
+        '</td><td class="n">' + pm('google') + '</td><td class="n">' + pm('mapbox') + '</td><td class="n">' + pm('open_meteo') + '</td><td class="n">' + pm('google_gemini') +
+        '</td><td class="n">' + fmtN(a.users) + '</td></tr>';
+    }).join('');
+  } else {
+    // Per user per month by activity (they add up to the total); calls per user per day beneath.
+    head.innerHTML = '<tr><th>Last</th>' + ACTIVITIES.map(([, l]) => '<th class="n">' + l + '</th>').join('') + '</tr>';
+    const at = (d, k) => byActivity.find(r => Number(r.days) === d && r.activity === k);
+    body.innerHTML = wins.map(d => {
+      if (!byActivity.some(r => Number(r.days) === d)) return '<tr><td>' + label(d) + '</td><td colspan="4" class="empty">No provider calls.</td></tr>';
+      return '<tr><td style="white-space:nowrap">' + label(d) + '</td>' + ACTIVITIES.map(([k]) => {
+        const r = at(d, k);
+        return '<td class="n">' + (r ? '<b>' + m(r.per_user_month) + '</b><span class="sub">' + r.requests_per_user_day + ' calls/day</span>' : '<span class="muted">—</span>') + '</td>';
+      }).join('') + '</tr>';
+    }).join('');
+  }
+  const now = allAt(7), base = allAt(30);
+  let trend = '';
+  if (!act && now && base && Number(base.per_user_month) > 0) {
+    const ch = (Number(now.per_user_month) - Number(base.per_user_month)) / Number(base.per_user_month) * 100;
+    trend = Math.abs(ch) < 5 ? 'The last 7 days are in line with the 30-day average. '
+      : 'The last 7 days are ' + Math.abs(Math.round(ch)) + '% ' + (ch > 0 ? 'above' : 'below') + ' the 30-day average. ';
+  }
+  foot.textContent = (act
+    ? 'Automatic = protection that runs on its own (wake math, route watching, commute weather). Viewing = only while the app is open. User actions = setup, address search, drafts — a one-time setup isn\u2019t a monthly cost. Per user per month; they add up to the total. '
+    : trend) +
+    'Estimates at each product\u2019s first paid tier, before the shared monthly free allowances (the real bill is lower until those run out). A user active 3 of 7 days counts as 3 user-days.';
+}
+document.querySelectorAll('#cpuSeg button').forEach(b => b.addEventListener('click', () => {
+  cpuView = b.dataset.v;
+  document.querySelectorAll('#cpuSeg button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  if (last) renderCostPerUser(last.costPerUser, last.costByActivity);
 }));
 
 function drawTrend(days){
@@ -1010,7 +1083,7 @@ async function refresh(manual){
     renderPhones(s);
     renderCosts(s);
     renderFlags(s);
-    if (document.getElementById('v-overview').classList.contains('active')) { drawTrend(s.dailyTrend || []); drawSources(s.bySource); }
+    if (document.getElementById('v-overview').classList.contains('active')) { drawTrend(s.dailyTrend || []); drawSources(s.bySource); renderCostPerUser(s.costPerUser, s.costByActivity); }
     document.getElementById('stamp').textContent = 'Updated ' + new Date(s.generatedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
   } catch (e) {
     if (!last) {
@@ -1025,7 +1098,7 @@ async function refresh(manual){
     btn.classList.remove('spin');
   }
 }
-window.addEventListener('resize', () => { if (last) { drawTrend(last.dailyTrend || []); drawSources(last.bySource); } });
+window.addEventListener('resize', () => { if (last) { drawTrend(last.dailyTrend || []); drawSources(last.bySource); renderCostPerUser(last.costPerUser, last.costByActivity); } });
 
 // ---------- people ----------
 document.getElementById('gDays').addEventListener('change', e => {
