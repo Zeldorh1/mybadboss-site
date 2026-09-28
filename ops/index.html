@@ -38,6 +38,8 @@
     --bad-ink: #f07a7a;
     --bad-soft: rgba(208, 59, 59, .15);
     --grid: #232730;
+    /* Source series (dataviz reference palette, dark steps; validated on #15171c) */
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #008300; --s7: #9085e9; --s-other: #6b7180;
     --radius: 16px;
     --shadow: 0 1px 0 rgba(255,255,255,.03) inset, 0 8px 24px rgba(0,0,0,.25);
   }
@@ -52,6 +54,7 @@
       --warn-ink: #8a5a00; --warn-soft: rgba(250, 178, 25, .16);
       --bad-ink: #b42a2a; --bad-soft: rgba(208, 59, 59, .10);
       --grid: #eceef2;
+      --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4; --s6: #008300; --s7: #4a3aa7; --s-other: #9aa0ab;
       --shadow: 0 1px 2px rgba(16,24,40,.05), 0 4px 16px rgba(16,24,40,.04);
     }
   }
@@ -178,6 +181,10 @@
                 transition: opacity .1s; transform: translateX(-50%); }
   .chart .tip b { display: block; font-size: 13px; color: var(--text); }
   .chart .tip span { color: var(--text-2); }
+  .legend-t td { padding: 5px 0; font-size: 12.5px; border-top: 1px solid var(--line-soft); }
+  .legend-t td.n { text-align: right; font-variant-numeric: tabular-nums; padding-left: 12px; }
+  .sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 8px; vertical-align: -1px; }
+  .chart .tip .row { display: flex; justify-content: space-between; gap: 14px; color: var(--text-2); }
   .chart-sum { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 10px; font-size: 12px; color: var(--muted); }
   .chart-sum b { color: var(--text); font-weight: 600; }
 
@@ -322,6 +329,16 @@
           <h2>Needs attention</h2>
           <div class="body" id="anoms"></div>
         </div>
+        <div class="card" id="srcCard">
+          <h2>Where calls come from
+            <span class="right" style="display:inline-flex;gap:6px;flex-wrap:wrap">
+              <span class="seg" id="srcRange"><button data-d="30" aria-pressed="true">30d</button><button data-d="60" aria-pressed="false">60d</button><button data-d="90" aria-pressed="false">90d</button></span>
+              <span class="seg" id="srcMetric"><button data-m="requests" aria-pressed="true">Calls</button><button data-m="billable_units" aria-pressed="false">Billable</button><button data-m="est_usd" aria-pressed="false">Cost</button></span>
+            </span></h2>
+          <div class="chart" id="srcChart"><svg id="srcSvg" role="img" aria-label="Provider calls per day, stacked by source"></svg><div class="tip" id="srcTip"></div></div>
+          <table class="legend-t" style="width:100%;margin-top:10px"><tbody id="srcLegend"></tbody></table>
+          <p class="foot" id="srcFoot" style="margin-top:8px"></p>
+        </div>
         <div class="card">
           <h2>Last 30 days <span class="right seg" id="trendSeg">
             <button data-m="calls" aria-pressed="true">Calls</button>
@@ -379,6 +396,24 @@
             <table class="body"><thead><tr><th>Call</th><th class="n">Calls</th><th class="n">List</th></tr></thead><tbody id="maps"></tbody></table></div>
           <div class="card"><h2>AI <span class="sub">last 24h</span></h2>
             <table class="body"><thead><tr><th>Call</th><th class="n">Calls</th><th class="n">List</th></tr></thead><tbody id="ai"></tbody></table></div>
+        </div>
+        <div class="card" id="wxCard">
+          <h2>Weather <span class="sub">cache efficiency = provider calls &divide; weather requests &middot; lower is better</span></h2>
+          <table class="body"><thead><tr><th></th><th class="n">24h</th><th class="n">7 days</th></tr></thead><tbody id="wx"></tbody></table></div>
+        <div class="card" id="rtCard">
+          <h2>Routing &amp; weather usage <span class="right seg" id="rtSeg">
+            <button data-p="all" aria-pressed="true">All</button>
+            <button data-p="google" aria-pressed="false">Google</button>
+            <button data-p="mapbox" aria-pressed="false">Mapbox</button>
+            <button data-p="open_meteo" aria-pressed="false">Weather</button></span></h2>
+          <p class="foot" style="margin:0 0 8px">By provider and billing unit &mdash; never one blended &ldquo;map call&rdquo;. Costs are estimates at each product&rsquo;s first paid tier (the at-scale marginal cost); the shared monthly free allowances are listed under Rates, not netted. Rates live in <code>ops_provider_pricing</code>.</p>
+          <div style="overflow-x:auto"><table class="body"><thead id="rtDailyHead"></thead><tbody id="rtDaily"></tbody></table></div>
+          <h2 style="margin-top:14px">By feature <span class="sub">what made the calls on</span> <select id="rtDay"></select></h2>
+          <div style="overflow-x:auto"><table class="body"><thead><tr><th>Product</th><th>Feature</th><th>Why</th><th>Outcome</th><th class="n">Requests</th><th class="n">Billable</th><th class="n">Est.</th></tr></thead><tbody id="rtBreak"></tbody></table></div>
+          <h2 style="margin-top:14px">Per user <span class="sub">last 7 days &middot; an account, or an app session for guests</span></h2>
+          <div style="overflow-x:auto"><table class="body"><thead><tr><th>Product</th><th class="n">Users</th><th class="n">Calls / user / day</th><th class="n">Billable / user / day</th><th class="n">Max in a day</th><th class="n">30-day units / user</th><th class="n">Variable $ / user / month</th></tr></thead><tbody id="rtUser"></tbody></table></div>
+          <h2 style="margin-top:14px">Rates <span class="sub">first paid tier &middot; edit with SQL</span></h2>
+          <div style="overflow-x:auto"><table class="body"><thead><tr><th>Product</th><th>Unit</th><th class="n">Free / month</th><th class="n">$ / 1,000</th><th>Verified</th></tr></thead><tbody id="rtRates"></tbody></table></div>
         </div>
       </div>
     </section>
@@ -485,14 +520,14 @@ function showTab(name){
   document.querySelectorAll('nav.tabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === name)));
   document.querySelectorAll('section.view').forEach(v => v.classList.toggle('active', v.id === 'v-' + name));
   try { localStorage.setItem('opsTab', name); } catch (e) {}
-  if (name === 'overview' && last) drawTrend(last.dailyTrend || []);
+  if (name === 'overview' && last) { drawTrend(last.dailyTrend || []); drawSources(last.bySource); }
   window.scrollTo({ top: 0 });
 }
 document.querySelectorAll('nav.tabs button').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
 document.querySelectorAll('#trendSeg button').forEach(b => b.addEventListener('click', () => {
   trendMetric = b.dataset.m;
   document.querySelectorAll('#trendSeg button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
-  if (last) drawTrend(last.dailyTrend || []);
+  if (last) { drawTrend(last.dailyTrend || []); drawSources(last.bySource); }
 }));
 
 // ---------- counts ----------
@@ -566,6 +601,114 @@ function niceMax(v){
   const f = v / p;
   return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * p;
 }
+// WHERE CALLS COME FROM (migration 0021, owner 2026-09-28): provider
+// requests per day, stacked by source, over 30/60/90 days. Fixed hue per
+// source (never re-painted by a filter); "Other" is neutral.
+const SOURCES = [
+  { key: 'mapbox_dir', label: 'Mapbox Directions', color: 'var(--s1)', match: r => r.provider === 'mapbox' },
+  { key: 'g_dir', label: 'Google Directions (Advanced)', color: 'var(--s2)', match: r => r.product === 'directions_advanced' },
+  { key: 'g_dm', label: 'Google Distance Matrix (Advanced)', color: 'var(--s3)', match: r => r.product === 'distance_matrix_advanced' },
+  { key: 'g_places', label: 'Google Places (search)', color: 'var(--s4)', match: r => /^(places_autocomplete|place_details_essentials|text_search_pro|nearby_search_pro)$/.test(r.product) },
+  { key: 'g_static', label: 'Google Static Maps', color: 'var(--s5)', match: r => r.product === 'static_maps' },
+  { key: 'weather', label: 'Weather (Open-Meteo)', color: 'var(--s6)', match: r => r.provider === 'open_meteo' },
+  { key: 'ai', label: 'AI (Gemini)', color: 'var(--s7)', match: r => r.provider === 'google_gemini' },
+  { key: 'other', label: 'Other', color: 'var(--s-other)', match: () => true },
+];
+let srcDays = 30, srcMetric = 'requests';
+function drawSources(rows){
+  const svg = document.getElementById('srcSvg'), tip = document.getElementById('srcTip');
+  const legend = document.getElementById('srcLegend'), foot = document.getElementById('srcFoot');
+  if (!rows) {
+    svg.innerHTML = ''; legend.innerHTML = '';
+    foot.innerHTML = 'Apply <code>0021_usage_by_source.sql</code> to see calls by source.';
+    return;
+  }
+  const end = new Date(); end.setUTCHours(12, 0, 0, 0);
+  const days = [];
+  for (let i = srcDays - 1; i >= 0; i--) days.push(new Date(end.getTime() - i * 864e5).toISOString().slice(0, 10));
+  const idx = new Map(days.map((d, i) => [d, i]));
+  const grid = days.map(() => SOURCES.map(() => 0));
+  const notSent = days.map(() => 0);
+  for (const r of rows) {
+    const i = idx.get(r.day); if (i == null) continue;
+    notSent[i] += Number(r.not_sent) || 0;
+    if (r.provider === 'none') continue;
+    const k = SOURCES.findIndex(s => s.match(r));
+    grid[i][k] += Number(r[srcMetric]) || 0;
+  }
+  const isCost = srcMetric === 'est_usd';
+  const fmt = v => isCost ? '$' + v.toFixed(v < 1 ? 3 : 2) : fmtN(Math.round(v));
+  const totals = SOURCES.map((_, k) => grid.reduce((a, d) => a + d[k], 0));
+  const active = SOURCES.map((s, k) => k).filter(k => totals[k] > 0);
+  const W = svg.clientWidth || 600, H = 190, padL = 40, padB = 22, padT = 8;
+  const n = days.length, iw = W - padL, ih = H - padB - padT, slot = iw / n, bw = Math.max(1.5, slot - (n > 60 ? 1 : 2));
+  const max = niceMax(Math.max(0, ...grid.map(d => d.reduce((a, b) => a + b, 0))) || 1);
+  const y = v => padT + ih - (v / max) * ih;
+  let g = '';
+  [0, .5, 1].forEach(t => {
+    const yy = y(max * t);
+    g += '<line x1="' + padL + '" x2="' + W + '" y1="' + yy + '" y2="' + yy + '" stroke="var(--grid)" stroke-width="1"/>' +
+      '<text x="' + (padL - 8) + '" y="' + (yy + 4) + '" text-anchor="end" font-size="10.5" fill="var(--muted)">' + (isCost ? '$' + (max * t).toFixed(max * t < 10 ? 2 : 0) : fmtN(max * t)) + '</text>';
+  });
+  let bars = '';
+  grid.forEach((d, i) => {
+    const x = padL + i * slot + (slot - bw) / 2;
+    let base = padT + ih;
+    const segs = active.filter(k => d[k] > 0);
+    segs.forEach((k, j) => {
+      const h = (d[k] / max) * ih;
+      const top = base - h;
+      const last = j === segs.length - 1;
+      const hh = Math.max(0, h - (last ? 0 : 2)); // 2px surface gap between stacked segments
+      const r = last ? Math.min(3, bw / 2, hh) : 0;
+      const t = base - hh;
+      const path = hh <= 0 ? '' : 'M' + x + ',' + base + 'V' + (t + r) + (r ? 'Q' + x + ',' + t + ' ' + (x + r) + ',' + t : '') + 'H' + (x + bw - r) +
+        (r ? 'Q' + (x + bw) + ',' + t + ' ' + (x + bw) + ',' + (t + r) : '') + 'V' + base + 'Z';
+      bars += '<path data-i="' + i + '" d="' + path + '" fill="' + SOURCES[k].color + '"/>';
+      base = top;
+    });
+  });
+  const lbl = (i, a) => '<text x="' + (padL + i * slot + slot / 2) + '" y="' + (H - 4) + '" text-anchor="' + a + '" font-size="10.5" fill="var(--muted)">' + days[i].slice(5).replace('-', '/') + '</text>';
+  svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+  svg.innerHTML = g + bars + lbl(0, 'start') + lbl(Math.floor((n - 1) / 2), 'middle') + lbl(n - 1, 'end') +
+    '<rect id="srcHit" x="' + padL + '" y="0" width="' + iw + '" height="' + H + '" fill="transparent"/>';
+  const hit = svg.querySelector('#srcHit');
+  const show = ev => {
+    const rect = svg.getBoundingClientRect();
+    const i = Math.max(0, Math.min(n - 1, Math.floor(((ev.clientX - rect.left) * (W / rect.width) - padL) / slot)));
+    svg.querySelectorAll('path').forEach(p => p.setAttribute('opacity', p.dataset.i == i ? 1 : .35));
+    const d = grid[i], tot = d.reduce((a, b) => a + b, 0);
+    tip.innerHTML = '<b>' + new Date(days[i] + 'T12:00:00Z').toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' }) + ' · ' + fmt(tot) + '</b>' +
+      active.filter(k => d[k] > 0).map(k => '<div class="row"><span><i class="sw" style="background:' + SOURCES[k].color + '"></i>' + esc(SOURCES[k].label) + '</span><span>' + fmt(d[k]) + '</span></div>').join('') +
+      (notSent[i] ? '<div class="row"><span>Cache hits / refused (not sent)</span><span>' + fmtN(notSent[i]) + '</span></div>' : '');
+    const cx = (padL + i * slot + slot / 2) * (rect.width / W);
+    const half = Math.min(rect.width / 2, (tip.offsetWidth || 220) / 2);
+    tip.style.left = Math.max(half, Math.min(rect.width - half, cx)) + 'px';
+    tip.style.opacity = 1;
+  };
+  const hide = () => { tip.style.opacity = 0; svg.querySelectorAll('path').forEach(p => p.setAttribute('opacity', 1)); };
+  hit.addEventListener('pointermove', show); hit.addEventListener('pointerdown', show); hit.addEventListener('pointerleave', hide);
+  const all = totals.reduce((a, b) => a + b, 0);
+  legend.innerHTML = active.length ? active.map(k => '<tr><td><i class="sw" style="background:' + SOURCES[k].color + '"></i>' + esc(SOURCES[k].label) +
+    '</td><td class="n"><b>' + fmt(totals[k]) + '</b></td><td class="n muted">' + (all ? Math.round(totals[k] / all * 100) : 0) + '%</td></tr>').join('') +
+    '<tr><td><b>Total</b></td><td class="n"><b>' + fmt(all) + '</b></td><td class="n muted">' + fmt(all / n) + '/day</td></tr>'
+    : '<tr><td class="empty">No provider calls in this period.</td></tr>';
+  const ns = notSent.reduce((a, b) => a + b, 0);
+  foot.textContent = (srcMetric === 'requests' ? 'Real provider requests only. ' : srcMetric === 'billable_units' ? 'What each provider bills: requests, or matrix elements. ' : 'Estimated at each product\u2019s first paid tier, before free allowances. ') +
+    (ns ? fmtN(ns) + ' more requests were answered from cache or refused and never reached a provider.' : '') +
+    ' Days before 2026-09-28 have no billable-unit detail; they count as one unit per call.';
+}
+document.querySelectorAll('#srcRange button').forEach(b => b.addEventListener('click', () => {
+  srcDays = Number(b.dataset.d);
+  document.querySelectorAll('#srcRange button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  if (last) drawSources(last.bySource);
+}));
+document.querySelectorAll('#srcMetric button').forEach(b => b.addEventListener('click', () => {
+  srcMetric = b.dataset.m;
+  document.querySelectorAll('#srcMetric button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  if (last) drawSources(last.bySource);
+}));
+
 function drawTrend(days){
   const svg = document.getElementById('trendSvg');
   const tip = document.getElementById('trendTip');
@@ -718,6 +861,100 @@ function renderPhones(s){
   document.getElementById('dotPhones').hidden = !anyBad;
 }
 
+// Weather cache efficiency (migration 0019): of every weather-proxy request,
+// how many reached the provider. Everything else was served from the shared
+// cache or refused by a limit.
+// ROUTING & WEATHER USAGE (migration 0020, advisor 2026-09-28): every call
+// by provider, product and billing unit. Mapbox Directions bills requests;
+// a Matrix call bills ELEMENTS; Google Distance Matrix bills elements too.
+// The provider filter applies to every table.
+let rtProv = 'all', rtDaySel = null;
+const PROV = { google: 'Google', mapbox: 'Mapbox', open_meteo: 'Weather', none: 'Refused before a provider', unknown: 'Other' };
+const rtUsd = v => '$' + (Number(v) || 0).toFixed(v && v < 1 ? 4 : 2);
+const rtName = r => r.product ? (r.product_label || r.product) : (PROV[r.provider] || r.provider);
+const unitName = (u, n) => u === 'element' ? (n === 1 ? 'element' : 'elements') : u === 'second' ? 's' : (n === 1 ? 'request' : 'requests');
+function rtRows(rt){ return (rt.daily || []).filter(r => rtProv === 'all' || r.provider === rtProv); }
+function renderRouting(rt){
+  const head = document.getElementById('rtDailyHead'), body = document.getElementById('rtDaily');
+  if (!rt) {
+    head.innerHTML = '';
+    body.innerHTML = '<tr><td class="empty">Apply <code>0020_provider_usage.sql</code> to see usage by provider.</td></tr>';
+    ['rtBreak','rtUser','rtRates'].forEach(id => document.getElementById(id).innerHTML = '');
+    document.getElementById('rtDay').innerHTML = '';
+    return;
+  }
+  const rows = rtRows(rt);
+  const days = [...new Set((rt.daily || []).map(r => r.day))].sort().reverse();
+  const sum = (xs, f) => xs.reduce((a, r) => a + (Number(f(r)) || 0), 0);
+  const on = (d, pred) => rows.filter(r => r.day === d && pred(r));
+  const maps = r => r.service === 'maps';
+  if (rtProv === 'all') {
+    head.innerHTML = '<tr><th>Day</th><th class="n">Routing ops</th><th class="n">Google calls</th><th class="n">Mapbox calls</th><th class="n">Google units</th><th class="n">Mapbox units</th><th class="n">Est. Google</th><th class="n">Est. Mapbox</th><th class="n">Est. combined</th><th class="n">Refused</th><th class="n">Weather calls</th></tr>';
+    body.innerHTML = days.map(d => {
+      const g = on(d, r => maps(r) && r.provider === 'google'), m = on(d, r => maps(r) && r.provider === 'mapbox');
+      const gu = sum(g, r => r.est_usd), mu = sum(m, r => r.est_usd);
+      return '<tr><td style="white-space:nowrap">' + esc(d) + '</td><td class="n"><b>' + fmtN(sum(g, r => r.requests) + sum(m, r => r.requests)) + '</b></td>' +
+        '<td class="n">' + fmtN(sum(g, r => r.requests)) + '</td><td class="n">' + fmtN(sum(m, r => r.requests)) + '</td>' +
+        '<td class="n">' + fmtN(sum(g, r => r.billable_units)) + '</td><td class="n">' + fmtN(sum(m, r => r.billable_units)) + '</td>' +
+        '<td class="n">' + rtUsd(gu) + '</td><td class="n">' + rtUsd(mu) + '</td><td class="n"><b>' + rtUsd(gu + mu) + '</b></td>' +
+        '<td class="n muted">' + fmtN(sum(on(d, r => maps(r) && r.outcome === 'refused'), r => r.rows)) + '</td>' +
+        '<td class="n">' + fmtN(sum(on(d, r => r.provider === 'open_meteo'), r => r.requests)) + '</td></tr>';
+    }).join('') || '<tr><td colspan="11" class="empty">Nothing in the last 14 days.</td></tr>';
+  } else {
+    head.innerHTML = '<tr><th>Day</th><th class="n">Requests</th><th class="n">Billable units</th><th class="n">Est. cost</th><th class="n">Errors</th><th class="n">Refused</th><th class="n">Cache hits</th></tr>';
+    body.innerHTML = days.map(d => {
+      const x = on(d, () => true);
+      if (!x.length) return '';
+      return '<tr><td style="white-space:nowrap">' + esc(d) + '</td><td class="n"><b>' + fmtN(sum(x, r => r.requests)) + '</b></td><td class="n">' + fmtN(sum(x, r => r.billable_units)) +
+        '</td><td class="n">' + rtUsd(sum(x, r => r.est_usd)) + '</td><td class="n">' + fmtN(sum(x.filter(r => r.outcome === 'error'), r => r.rows)) +
+        '</td><td class="n muted">' + fmtN(sum(x.filter(r => r.outcome === 'refused'), r => r.rows)) + '</td><td class="n muted">' + fmtN(sum(x.filter(r => r.outcome === 'cache_hit'), r => r.rows)) + '</td></tr>';
+    }).join('') || '<tr><td colspan="7" class="empty">Nothing from this provider in the last 14 days.</td></tr>';
+  }
+  const sel = document.getElementById('rtDay');
+  if (!rtDaySel || !days.includes(rtDaySel)) rtDaySel = days[0] || null;
+  sel.innerHTML = days.map(d => '<option' + (d === rtDaySel ? ' selected' : '') + '>' + esc(d) + '</option>').join('');
+  const br = rows.filter(r => r.day === rtDaySel).sort((a, b) => (b.requests - a.requests) || (b.rows - a.rows));
+  document.getElementById('rtBreak').innerHTML = br.map(r =>
+    '<tr><td>' + esc(rtName(r)) + '</td><td>' + esc(r.caller) + '</td><td>' + esc(r.trigger) +
+    '</td><td>' + esc(r.outcome) + '</td><td class="n">' + fmtN(r.requests) + '</td><td class="n">' + fmtN(r.billable_units) + ' ' + unitName(r.billing_unit, Number(r.billable_units)) +
+    '</td><td class="n muted">' + rtUsd(r.est_usd) + '</td></tr>').join('') || '<tr><td colspan="7" class="empty">Nothing on this day.</td></tr>';
+  const pu = (rt.perUser || []).filter(r => rtProv === 'all' || r.provider === rtProv);
+  document.getElementById('rtUser').innerHTML = pu.map(r =>
+    '<tr><td>' + esc(rtName(r)) + '</td><td class="n">' + fmtN(r.users) + '</td><td class="n">' + r.requests_per_user_day +
+    '</td><td class="n">' + r.units_per_user_day + ' ' + unitName(r.billing_unit, 2) + '</td><td class="n">' + fmtN(r.max_units_user_day) + '</td><td class="n">' + r.projected_30d_units_per_user +
+    '</td><td class="n"><b>' + rtUsd(r.projected_usd_per_user_month) + '</b></td></tr>').join('') || '<tr><td colspan="7" class="empty">No provider calls in the last 7 days.</td></tr>';
+  const rates = (rt.pricing || []).filter(r => rtProv === 'all' || r.provider === rtProv);
+  document.getElementById('rtRates').innerHTML = rates.map(r =>
+    '<tr><td>' + esc(r.label) + (r.notes ? '<span class="sub">' + esc(r.notes) + '</span>' : '') + '</td><td>' + esc(r.billing_unit) + '</td><td class="n">' + (r.free_units_per_month == null ? '—' : fmtN(r.free_units_per_month)) +
+    '</td><td class="n">' + rtUsd(r.usd_per_1000) + '</td><td class="muted">' + esc(r.verified_on || 'not verified') + '</td></tr>').join('');
+}
+document.querySelectorAll('#rtSeg button').forEach(b => b.addEventListener('click', () => {
+  rtProv = b.dataset.p;
+  document.querySelectorAll('#rtSeg button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  if (last) renderRouting(last.routing);
+}));
+document.getElementById('rtDay').addEventListener('change', e => { rtDaySel = e.target.value; if (last) renderRouting(last.routing); });
+
+function renderWeather(w){
+  const body = document.getElementById('wx');
+  if (!w || !w.h24) {
+    body.innerHTML = '<tr><td colspan="3" class="empty">Apply <code>0019_weather_limits.sql</code> to see weather numbers.</td></tr>';
+    return;
+  }
+  const pct = r => r.requests ? Math.round(r.upstream / r.requests * 100) + '%' : '—';
+  const row = (label, f) => '<tr><td>' + label + '</td><td class="n">' + f(w.h24) + '</td><td class="n">' + f(w.d7) + '</td></tr>';
+  body.innerHTML = [
+    row('<b>Cache efficiency</b>', r => '<b>' + pct(r) + '</b>'),
+    row('Weather requests', r => fmtN(r.requests)),
+    row('Provider calls', r => fmtN(r.upstream)),
+    row('Cache hits', r => fmtN(r.cache_hit)),
+    row('Rate limited', r => fmtN(r.rate_limited)),
+    row('Provider blocked (switch / daily cap)', r => fmtN(r.provider_blocked)),
+    row('Failed or not configured', r => fmtN(r.failed)),
+    row('App sessions', r => fmtN(r.sessions)),
+  ].join('');
+}
+
 function renderCosts(s){
   const bill = document.getElementById('cBill'), bf = document.getElementById('cBillFoot');
   if (s.monthBillableUsd != null) {
@@ -743,6 +980,8 @@ function renderCosts(s){
     : '<tr><td colspan="3" class="empty">Nothing in the last 24h.</td></tr>'; };
   fill('maps', bySvc('maps'));
   fill('ai', bySvc('ai'));
+  renderWeather(s.weatherEfficiency);
+  renderRouting(s.routing);
 }
 
 function renderFlags(s){
@@ -771,7 +1010,7 @@ async function refresh(manual){
     renderPhones(s);
     renderCosts(s);
     renderFlags(s);
-    if (document.getElementById('v-overview').classList.contains('active')) drawTrend(s.dailyTrend || []);
+    if (document.getElementById('v-overview').classList.contains('active')) { drawTrend(s.dailyTrend || []); drawSources(s.bySource); }
     document.getElementById('stamp').textContent = 'Updated ' + new Date(s.generatedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
   } catch (e) {
     if (!last) {
@@ -786,7 +1025,7 @@ async function refresh(manual){
     btn.classList.remove('spin');
   }
 }
-window.addEventListener('resize', () => { if (last) drawTrend(last.dailyTrend || []); });
+window.addEventListener('resize', () => { if (last) { drawTrend(last.dailyTrend || []); drawSources(last.bySource); } });
 
 // ---------- people ----------
 document.getElementById('gDays').addEventListener('change', e => {
