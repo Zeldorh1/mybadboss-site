@@ -346,6 +346,18 @@
           <div style="overflow-x:auto"><table class="body"><thead id="cpuHead"></thead><tbody id="cpu"></tbody></table></div>
           <p class="foot" id="cpuFoot" style="margin-top:8px"></p>
         </div>
+        <div class="card" id="cplCard">
+          <h2>Cost per protected leg <span class="sub">actual</span></h2>
+          <p class="foot" style="margin:0 0 6px">Every provider call made for one protected commute, grouped by its leg session id. Actual cost &divide; actual protected legs &mdash; the unit Ultimate is priced by.</p>
+          <div style="overflow-x:auto"><table class="body"><thead id="cplHead"></thead><tbody id="cpl"></tbody></table></div>
+          <p class="foot" id="cplFoot" style="margin-top:8px"></p>
+        </div>
+        <div class="card" id="shadowCard">
+          <h2>Shadow Ultimate <span class="sub">projected &middot; zero provider calls</span></h2>
+          <p class="foot" style="margin:0 0 6px">Phones report daily counts of observed legs; the model multiplies by the measured cost per protected leg. Actual, projected and the hard maximum are kept apart.</p>
+          <div style="overflow-x:auto"><table class="body"><tbody id="shadow"></tbody></table></div>
+          <p class="foot" id="shadowFoot" style="margin-top:8px"></p>
+        </div>
         <div class="card">
           <h2>Last 30 days <span class="right seg" id="trendSeg">
             <button data-m="calls" aria-pressed="true">Calls</button>
@@ -527,14 +539,14 @@ function showTab(name){
   document.querySelectorAll('nav.tabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === name)));
   document.querySelectorAll('section.view').forEach(v => v.classList.toggle('active', v.id === 'v-' + name));
   try { localStorage.setItem('opsTab', name); } catch (e) {}
-  if (name === 'overview' && last) { drawTrend(last.dailyTrend || []); drawSources(last.bySource); renderCostPerUser(last.costPerUser, last.costByActivity); }
+  if (name === 'overview' && last) { drawTrend(last.dailyTrend || []); drawSources(last.bySource); renderCostPerUser(last.costPerUser, last.costByActivity); renderLegEconomics(last); }
   window.scrollTo({ top: 0 });
 }
 document.querySelectorAll('nav.tabs button').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
 document.querySelectorAll('#trendSeg button').forEach(b => b.addEventListener('click', () => {
   trendMetric = b.dataset.m;
   document.querySelectorAll('#trendSeg button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
-  if (last) { drawTrend(last.dailyTrend || []); drawSources(last.bySource); renderCostPerUser(last.costPerUser, last.costByActivity); }
+  if (last) { drawTrend(last.dailyTrend || []); drawSources(last.bySource); renderCostPerUser(last.costPerUser, last.costByActivity); renderLegEconomics(last); }
 }));
 
 // ---------- counts ----------
@@ -776,10 +788,76 @@ function renderCostPerUser(rows, byActivity){
     : trend) +
     'Estimates at each product\u2019s first paid tier, before the shared monthly free allowances (the real bill is lower until those run out). A user active 3 of 7 days counts as 3 user-days.';
 }
+// Cost per protected leg (migration 0025) and Shadow Ultimate (0026/0027): the
+// three truths — ACTUAL · PROJECTED · HARD MAXIMUM — never blended.
+function renderLegEconomics(s){
+  const head = document.getElementById('cplHead'), body = document.getElementById('cpl'), foot = document.getElementById('cplFoot');
+  const sb = document.getElementById('shadow'), sf = document.getElementById('shadowFoot');
+  const m = v => v == null ? '\u2014' : '$' + Number(v).toFixed(Number(v) < 1 ? 3 : 2);
+  const n1 = v => v == null ? '\u2014' : Number(v).toFixed(1);
+  const cpl = s && s.costPerLeg, us = s && s.ultimateShadow;
+  if (!cpl) {
+    head.innerHTML = '';
+    body.innerHTML = '<tr><td class="empty">Apply <code>0025_cost_per_protected_leg.sql</code> to see this. Needs a build that tags calls with a leg session id.</td></tr>';
+    foot.textContent = '';
+  } else {
+    const u = cpl.usd_per_leg || {}, l = cpl.legs_per_user_day || {}, r = cpl.requests_per_leg || {}, mix = cpl.provider_mix_usd_per_leg || {};
+    head.innerHTML = '<tr><th>Last ' + cpl.days + ' days</th><th class="n">Legs</th><th class="n">Calls / leg</th><th class="n">Cost / leg</th><th class="n">p90</th><th class="n">p95</th><th class="n">Legs / user-day p50 &middot; p90</th></tr>';
+    body.innerHTML = cpl.legs > 0
+      ? '<tr><td>Protected legs</td><td class="n">' + fmtN(cpl.legs) + '</td><td class="n">' + n1(r.mean) + '</td><td class="n"><b>' + m(u.mean) + '</b></td><td class="n">' + m(u.p90) + '</td><td class="n">' + m(u.p95) + '</td><td class="n">' + n1(l.p50) + ' &middot; ' + n1(l.p90) + '</td></tr>'
+      : '<tr><td colspan="7" class="empty">No tagged protected legs in the window yet (the tag arrives with the next build).</td></tr>';
+    const mixTxt = Object.keys(mix).map(k => k + ' ' + m(mix[k])).join(' \u00b7 ');
+    const um = cpl.user_month_usd || {};
+    foot.textContent = (mixTxt ? 'Per leg by provider: ' + mixTxt + '. ' : '') +
+      'A user-month at the p50 rate of legs: ' + m(um.at_p50_legs) + ' \u00b7 at p90: ' + m(um.at_p90_legs) + ' \u00b7 ten legs daily: ' + m(um.ten_legs_daily) + '. Routing only; AI and weather are separate buckets below.';
+  }
+  if (!us) {
+    sb.innerHTML = '<tr><td class="empty">Apply <code>0026_ultimate_shadow.sql</code> and <code>0027_ultimate_economics.sql</code> to see this.</td></tr>';
+    sf.textContent = '';
+    return;
+  }
+  const a = us.actual || {}, sh = us.shadow_ultimate || {}, hm = us.hard_maximum_usd_per_user_month || {}, pr = us.pricing || {}, al = us.allowances || {};
+  const dist = sh.distribution_routing_usd_per_user_month || {}, rng = dist.p90_range || {}, st = sh.stress_routing_usd_per_user_month || {}, pv = sh.projected_variable_usd_per_user_month || {}, av = a.variable_usd_per_user_month || {};
+  const row = (k, v, cls) => '<tr' + (cls ? ' class="' + cls + '"' : '') + '><td>' + k + '</td><td class="n">' + v + '</td></tr>';
+  const section = t => '<tr><td colspan="2"><b>' + t + '</b></td></tr>';
+  const unmeasured = k => al[k] && al[k].measured === false ? ' <span class="muted">(not measured)</span>' : '';
+  sb.innerHTML = [
+    section('Actual \u00b7 last ' + us.days + ' days \u00b7 ' + fmtN(us.users_reporting) + ' users reporting'),
+    row('Observed legs / user-day', n1(a.observed_legs_per_user_day)),
+    row('Learned (recognised) legs / user-day', n1(a.learned_legs_per_user_day)),
+    row('Protected legs / user-day', n1(a.protected_legs_per_user_day)),
+    row('Calls / protected leg', n1(a.calls_per_protected_leg)),
+    row('Cost / protected leg (p25 \u00b7 mean \u00b7 p75)', m((a.usd_per_protected_leg||{}).p25) + ' \u00b7 <b>' + m((a.usd_per_protected_leg||{}).mean) + '</b> \u00b7 ' + m((a.usd_per_protected_leg||{}).p75)),
+    row('Actual routing / user-month', '<b>' + m(av.routing) + '</b>'),
+    row('Actual AI text / user-month', m(av.ai_text)),
+    section('Shadow Ultimate \u00b7 every recognised leg protected'),
+    row('Eligible (would-be protected) legs / user-day', n1(sh.eligible_legs_per_user_day)),
+    row('Estimated additional calls / user-day', n1(sh.estimated_additional_calls_per_user_day)),
+    row('Routing \u2014 Google / user-month', m(pv.routing_google)),
+    row('Routing \u2014 Mapbox / user-month', m(pv.routing_mapbox)),
+    row('Weather / user-month', m(pv.weather)),
+    row('AI text / user-month', m(pv.ai_text)),
+    row('Live companion ceiling / user-month', m(pv.companion_voice_ceiling) + unmeasured('companion_usd_per_minute')),
+    row('Projected routing: p50 \u00b7 p75 \u00b7 p90 \u00b7 p95', m(dist.p50) + ' \u00b7 ' + m(dist.p75) + ' \u00b7 <b>' + m(dist.p90) + '</b> \u00b7 ' + m(dist.p95)),
+    row('p90 range (shared caches \u2192 worst)', m(rng.low_shared) + ' \u2013 ' + m(rng.high)),
+    row('Stress: 2 \u00b7 5 \u00b7 10 legs a day', m(st.two_legs_daily) + ' \u00b7 ' + m(st.five_legs_daily) + ' \u00b7 ' + m(st.ten_legs_daily)),
+    row('Total p90 variable cost / user-month', '<b>' + m(sh.total_p90_variable_usd_per_user_month) + '</b>'),
+    section('Hard maximum \u00b7 every allowance hit'),
+    row('Routing at max legs (p95 per leg)', m(hm.routing_at_max_legs)),
+    row('Live companion (full allowance)', m(hm.companion_voice) + unmeasured('companion_usd_per_minute')),
+    row('AI text cap', m(hm.ai_text_cap) + unmeasured('ai_text_usd_per_user_month_cap')),
+    row('Weather \u00b7 infrastructure', m(hm.weather) + ' \u00b7 ' + m(hm.infrastructure)),
+    row('Hard maximum / user-month', '<b>' + m(hm.total) + '</b>'),
+    section('Pricing inputs'),
+    row('Retail for the p90 user at target margin', pr.retail_for_p90_user == null ? '<span class="muted">set store fee and margin in ops_ultimate_allowances</span>' : '<b>' + m(pr.retail_for_p90_user) + '</b>'),
+    row('Retail floor for the hard-maximum user', pr.retail_floor_hard_max == null ? '<span class="muted">set store fee</span>' : m(pr.retail_floor_hard_max)),
+  ].join('');
+  sf.textContent = (pr.doctrine || '') + ' Not a user-facing feature: counts only leave the phone; no call is made to simulate anything. Rates marked "not measured" are placeholders at 0.';
+}
 document.querySelectorAll('#cpuSeg button').forEach(b => b.addEventListener('click', () => {
   cpuView = b.dataset.v;
   document.querySelectorAll('#cpuSeg button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
-  if (last) renderCostPerUser(last.costPerUser, last.costByActivity);
+  if (last) renderCostPerUser(last.costPerUser, last.costByActivity); renderLegEconomics(last);
 }));
 
 function drawTrend(days){
@@ -1083,7 +1161,7 @@ async function refresh(manual){
     renderPhones(s);
     renderCosts(s);
     renderFlags(s);
-    if (document.getElementById('v-overview').classList.contains('active')) { drawTrend(s.dailyTrend || []); drawSources(s.bySource); renderCostPerUser(s.costPerUser, s.costByActivity); }
+    if (document.getElementById('v-overview').classList.contains('active')) { drawTrend(s.dailyTrend || []); drawSources(s.bySource); renderCostPerUser(s.costPerUser, s.costByActivity); renderLegEconomics(s); }
     document.getElementById('stamp').textContent = 'Updated ' + new Date(s.generatedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
   } catch (e) {
     if (!last) {
@@ -1098,7 +1176,7 @@ async function refresh(manual){
     btn.classList.remove('spin');
   }
 }
-window.addEventListener('resize', () => { if (last) { drawTrend(last.dailyTrend || []); drawSources(last.bySource); renderCostPerUser(last.costPerUser, last.costByActivity); } });
+window.addEventListener('resize', () => { if (last) { drawTrend(last.dailyTrend || []); drawSources(last.bySource); renderCostPerUser(last.costPerUser, last.costByActivity); renderLegEconomics(last); } });
 
 // ---------- people ----------
 document.getElementById('gDays').addEventListener('change', e => {
