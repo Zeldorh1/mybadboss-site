@@ -339,8 +339,15 @@
           <table class="legend-t" style="width:100%;margin-top:10px"><tbody id="srcLegend"></tbody></table>
           <p class="foot" id="srcFoot" style="margin-top:8px"></p>
         </div>
+        <div class="card" id="tierCard">
+          <h2>Economics by tier
+            <span class="right seg" id="tierSeg"><button data-t="free" aria-pressed="true">Free</button><button data-t="pro" aria-pressed="false">Pro</button><button data-t="ultimate" aria-pressed="false">Ultimate forecast</button></span></h2>
+          <p class="foot" id="tierLead" style="margin:0 0 6px"></p>
+          <div style="overflow-x:auto"><table class="body"><thead id="tierHead"></thead><tbody id="tier"></tbody></table></div>
+          <p class="foot" id="tierFoot" style="margin-top:8px"></p>
+        </div>
         <div class="card" id="cpuCard">
-          <h2>Cost per user
+          <h2>Fleet cost per user <span class="sub">every tier together</span>
             <span class="right seg" id="cpuSeg"><button data-v="provider" aria-pressed="true">By provider</button><button data-v="activity" aria-pressed="false">By activity</button></span></h2>
           <p class="foot" style="margin:0 0 6px">Average per active user, projected to a month.</p>
           <div style="overflow-x:auto"><table class="body"><thead id="cpuHead"></thead><tbody id="cpu"></tbody></table></div>
@@ -539,14 +546,14 @@ function showTab(name){
   document.querySelectorAll('nav.tabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === name)));
   document.querySelectorAll('section.view').forEach(v => v.classList.toggle('active', v.id === 'v-' + name));
   try { localStorage.setItem('opsTab', name); } catch (e) {}
-  if (name === 'overview' && last) { drawTrend(last.dailyTrend || []); drawSources(last.bySource); renderCostPerUser(last.costPerUser, last.costByActivity); renderLegEconomics(last); }
+  if (name === 'overview' && last) { drawTrend(last.dailyTrend || []); drawSources(last.bySource); renderCostPerUser(last.costPerUser, last.costByActivity); renderLegEconomics(last); renderTierEconomics(last); }
   window.scrollTo({ top: 0 });
 }
 document.querySelectorAll('nav.tabs button').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
 document.querySelectorAll('#trendSeg button').forEach(b => b.addEventListener('click', () => {
   trendMetric = b.dataset.m;
   document.querySelectorAll('#trendSeg button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
-  if (last) { drawTrend(last.dailyTrend || []); drawSources(last.bySource); renderCostPerUser(last.costPerUser, last.costByActivity); renderLegEconomics(last); }
+  if (last) { drawTrend(last.dailyTrend || []); drawSources(last.bySource); renderCostPerUser(last.costPerUser, last.costByActivity); renderLegEconomics(last); renderTierEconomics(last); }
 }));
 
 // ---------- counts ----------
@@ -788,6 +795,78 @@ function renderCostPerUser(rows, byActivity){
     : trend) +
     'Estimates at each product\u2019s first paid tier, before the shared monthly free allowances (the real bill is lower until those run out). A user active 3 of 7 days counts as 3 user-days.';
 }
+// ECONOMICS BY TIER (migration 0028): FREE measured · PRO measured · ULTIMATE
+// shadow forecast. The tier is stamped at usage time (server truth), never
+// today's profile joined onto old rows. Every number shows its sample size.
+let tierView = 'free';
+function renderTierEconomics(s){
+  const lead = document.getElementById('tierLead'), head = document.getElementById('tierHead'), body = document.getElementById('tier'), foot = document.getElementById('tierFoot');
+  const rows = s && s.economicsByTier, us = s && s.ultimateShadow;
+  const m = v => v == null ? '\u2014' : '$' + Number(v).toFixed(Number(v) < 1 ? 3 : 2);
+  const n1 = v => v == null ? '\u2014' : Number(v).toFixed(1);
+  const label = d => d === 1 ? '24h' : d + ' days';
+  const wins = [1, 7, 14, 30];
+  const users = r => '<span class="sub">' + fmtN(r.users) + (r.users === 1 ? ' user' : ' users') + ' \u00b7 ' + fmtN(r.user_days) + ' user-days</span>';
+  if (tierView === 'ultimate') {
+    lead.innerHTML = '<b>FORECAST \u00b7 NO LIVE SPEND.</b> Observed and shadow-eligible legs reported by phones (counts only) \u00d7 the measured Pro cost per protected leg \u00d7 the provider pricing table. No Maps, Weather or AI call is made to compute this.';
+    if (!us) { head.innerHTML = ''; body.innerHTML = '<tr><td class="empty">Apply <code>0026</code> and <code>0027</code> to see the forecast.</td></tr>'; foot.textContent = ''; return; }
+    const a = us.actual || {}, sh = us.shadow_ultimate || {}, dist = sh.distribution_routing_usd_per_user_month || {}, st = sh.stress_routing_usd_per_user_month || {}, pv = sh.projected_variable_usd_per_user_month || {}, al = us.allowances || {};
+    const unm = k => al[k] && al[k].measured === false ? ' <span class="muted">(not measured)</span>' : '';
+    const row = (k, v) => '<tr><td>' + k + '</td><td class="n">' + v + '</td></tr>';
+    head.innerHTML = '<tr><th>Last ' + us.days + ' days \u00b7 ' + fmtN(us.users_reporting) + ' users reporting \u00b7 ' + fmtN(us.user_days) + ' user-days</th><th class="n"></th></tr>';
+    body.innerHTML = [
+      row('Observed legs / user-day (mean)', n1(a.observed_legs_per_user_day)),
+      row('Observed legs / user-day: p50 \u00b7 p75 \u00b7 p90 \u00b7 p95', (function(o){ return n1(o.p50) + ' \u00b7 ' + n1(o.p75) + ' \u00b7 ' + n1(o.p90) + ' \u00b7 ' + n1(o.p95); })(us.observed_legs_per_user_day || {})),
+      row('Currently protected legs / user-day', n1(a.protected_legs_per_user_day)),
+      row('Shadow-eligible additional legs / user-day', n1(sh.eligible_legs_per_user_day)),
+      row('Estimated Ultimate routing calls / user-day', n1((Number(a.calls_per_user_day) || 0) + (Number(sh.estimated_additional_calls_per_user_day) || 0))),
+      row('Forecast routing / user-month: p50 \u00b7 p90 \u00b7 p95', m(dist.p50) + ' \u00b7 <b>' + m(dist.p90) + '</b> \u00b7 ' + m(dist.p95)),
+      row('Scenarios: 2 \u00b7 5 \u00b7 10 legs a day', m(st.two_legs_daily) + ' \u00b7 ' + m(st.five_legs_daily) + ' \u00b7 ' + m(st.ten_legs_daily)),
+      row('Forecast weather / user-month', m(pv.weather)),
+      row('AI text (actual today) / user-month \u2014 kept separate', m(pv.ai_text)),
+      row('Live companion ceiling / user-month \u2014 concept only, not an entitlement', m(pv.companion_voice_ceiling) + unm('companion_usd_per_minute')),
+    ].join('');
+    foot.textContent = 'Projected AI / voice stays separate until a measured, provider-priced model exists. Full detail in the Shadow Ultimate card below.';
+    return;
+  }
+  const want = tierView;
+  lead.innerHTML = want === 'free'
+    ? '<b>FREE \u00b7 measured.</b> Recurring = what keeps an active Free user running (automatic + viewing), per active user-month \u2014 the "$0 recurring Free" doctrine, tested. Setup = one-time user actions (address search, initial route pricing, place details) per NEW user, never \u00d730.'
+    : '<b>PRO \u00b7 measured.</b> What the $4.99 customer costs: variable cost per active user-month at list price, by provider and activity, and per protected leg once calls carry a leg id. Grant + entitlement roll into Pro; the source split is in the footer.';
+  if (!rows) { head.innerHTML = ''; body.innerHTML = '<tr><td class="empty">Apply <code>0028_economics_by_tier.sql</code> to see this. Rows stamped before it show as "unknown legacy".</td></tr>'; foot.textContent = ''; return; }
+  const at = d => rows.find(r => Number(r.days) === d && r.tier === want);
+  const legacy = d => rows.find(r => Number(r.days) === d && r.tier === 'unknown_legacy');
+  head.innerHTML = want === 'free'
+    ? '<tr><th>Last</th><th class="n">Recurring / user-month</th><th class="n">Automatic / user-day</th><th class="n">Setup / new user</th><th class="n">Google</th><th class="n">Mapbox</th><th class="n">Weather</th><th class="n">AI</th><th class="n">Auto \u00b7 View \u00b7 Action</th></tr>'
+    : '<tr><th>Last</th><th class="n">Variable / user-month</th><th class="n">/ user-day</th><th class="n">Requests</th><th class="n">Google</th><th class="n">Mapbox</th><th class="n">Weather</th><th class="n">AI</th><th class="n">Auto \u00b7 View \u00b7 Action</th><th class="n">Protected legs</th><th class="n">Calls / leg</th><th class="n">Cost / leg</th></tr>';
+  body.innerHTML = wins.map(d => {
+    const r = at(d);
+    if (!r) {
+      const lg = legacy(d);
+      return '<tr><td style="white-space:nowrap">' + label(d) + '</td><td colspan="11" class="empty">No ' + want + ' rows' + (lg ? ' \u00b7 ' + fmtN(lg.users) + ' legacy users (' + m(lg.per_user_month) + '/month, tier unknown)' : '') + '.</td></tr>';
+    }
+    const bp = r.by_provider || {}, ba = r.by_activity || {};
+    const act = m(ba.automatic) + ' \u00b7 ' + m(ba.viewing) + ' \u00b7 ' + m(ba.action);
+    const cells = want === 'free'
+      ? '<td class="n"><b>' + m(r.recurring_per_user_month) + '</b></td><td class="n">' + m(r.automatic_per_user_day) + '</td><td class="n">' + m(r.setup_usd_per_new_user) + '<span class="sub">' + fmtN(r.new_users) + ' new</span></td>'
+      : '<td class="n"><b>' + m(r.per_user_month) + '</b></td><td class="n">' + m(r.per_user_day) + '</td><td class="n">' + fmtN(r.requests) + '</td>';
+    const legs = want === 'pro'
+      ? '<td class="n">' + fmtN(r.protected_legs) + '</td><td class="n">' + (r.protected_legs ? n1(r.calls_per_protected_leg) : '\u2014') + '</td><td class="n">' + (r.protected_legs ? m(r.usd_per_protected_leg) : '\u2014') + '</td>'
+      : '';
+    return '<tr><td style="white-space:nowrap">' + label(d) + users(r) + '</td>' + cells +
+      '<td class="n">' + m(bp.google) + '</td><td class="n">' + m(bp.mapbox) + '</td><td class="n">' + m(bp.weather) + '</td><td class="n">' + m(bp.ai) + '</td><td class="n">' + act + '</td>' + legs + '</tr>';
+  }).join('');
+  const r30 = at(30);
+  const srcTxt = r30 && r30.sources ? Object.keys(r30.sources).map(k => k + ' ' + fmtN(r30.sources[k].users)).join(' \u00b7 ') : '';
+  foot.textContent = (srcTxt ? 'Sources, 30 days: ' + srcTxt + '. ' : '') +
+    'At-scale list price (each product\u2019s first paid tier); today\u2019s bill is lower until the shared free allowances run out \u2014 see API cost. A user active 3 of 7 days counts as 3 user-days. The tier is the one the user had when the call happened.';
+}
+document.querySelectorAll('#tierSeg button').forEach(b => b.addEventListener('click', () => {
+  tierView = b.dataset.t;
+  document.querySelectorAll('#tierSeg button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  if (last) renderTierEconomics(last);
+}));
+
 // Cost per protected leg (migration 0025) and Shadow Ultimate (0026/0027): the
 // three truths — ACTUAL · PROJECTED · HARD MAXIMUM — never blended.
 function renderLegEconomics(s){
@@ -857,7 +936,7 @@ function renderLegEconomics(s){
 document.querySelectorAll('#cpuSeg button').forEach(b => b.addEventListener('click', () => {
   cpuView = b.dataset.v;
   document.querySelectorAll('#cpuSeg button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
-  if (last) renderCostPerUser(last.costPerUser, last.costByActivity); renderLegEconomics(last);
+  if (last) renderCostPerUser(last.costPerUser, last.costByActivity); renderLegEconomics(last); renderTierEconomics(last);
 }));
 
 function drawTrend(days){
@@ -1161,7 +1240,7 @@ async function refresh(manual){
     renderPhones(s);
     renderCosts(s);
     renderFlags(s);
-    if (document.getElementById('v-overview').classList.contains('active')) { drawTrend(s.dailyTrend || []); drawSources(s.bySource); renderCostPerUser(s.costPerUser, s.costByActivity); renderLegEconomics(s); }
+    if (document.getElementById('v-overview').classList.contains('active')) { drawTrend(s.dailyTrend || []); drawSources(s.bySource); renderCostPerUser(s.costPerUser, s.costByActivity); renderLegEconomics(s); renderTierEconomics(s); }
     document.getElementById('stamp').textContent = 'Updated ' + new Date(s.generatedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
   } catch (e) {
     if (!last) {
@@ -1176,7 +1255,7 @@ async function refresh(manual){
     btn.classList.remove('spin');
   }
 }
-window.addEventListener('resize', () => { if (last) { drawTrend(last.dailyTrend || []); drawSources(last.bySource); renderCostPerUser(last.costPerUser, last.costByActivity); renderLegEconomics(last); } });
+window.addEventListener('resize', () => { if (last) { drawTrend(last.dailyTrend || []); drawSources(last.bySource); renderCostPerUser(last.costPerUser, last.costByActivity); renderLegEconomics(last); renderTierEconomics(last); } });
 
 // ---------- people ----------
 document.getElementById('gDays').addEventListener('change', e => {
